@@ -49,7 +49,7 @@ public:
 	float GetScreenToMapRatio() const { return m_screenToMapRatio; }
 
 	std::pair<int, int> GetHomePos() const { return {m_width / 2, m_height / 2}; }
-	int GetHomeRadius() const { return 2; }
+	int GetHomeRadius() const { return 5; }
 
 	Vector2 GetScreenHomePos() const { return {GetScreenWidth() / 2.f, GetScreenHeight() / 2.f}; }
 	float GetScreenHomeRadius() const { return GetHomeRadius() * m_screenToMapRatio; }

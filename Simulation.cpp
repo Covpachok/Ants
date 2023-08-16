@@ -1,16 +1,20 @@
 #include <iostream>
 #include "Simulation.hpp"
 #include <raylib.h>
+#include <raymath.h>
 #include <imgui.h>
 #include <rlImGui.h>
 
 const int kScreenWidth  = 1280;
 const int kScreenHeight = 720;
 
-const float kFoodPheromoneIntensity = 30;
-const float kHomePheromoneIntensity = 30;
+const float kFoodPheromoneIntensity = 10;
+const float kHomePheromoneIntensity = 10;
 
-const double kFixedTimestep = (1000.0 / 60.0) / 1000.0;
+const float kFoodPheromoneEvaporationRate = 2;
+const float kHomePheromoneEvaporationRate = 2;
+
+const double kFixedTimestep = ( 1000.0 / 60.0 ) / 1000.0;
 
 const int kAntsAmount = 2000;
 
@@ -19,7 +23,7 @@ Simulation::Simulation() :
 {
 	InitWindow(kScreenWidth, kScreenHeight, "Ants");
 
-	m_world.Init(kScreenWidth / 4, kScreenHeight / 4, 5, 5);
+	m_world.Init(kScreenWidth / 4, kScreenHeight / 4, kHomePheromoneEvaporationRate, kFoodPheromoneEvaporationRate);
 
 	for ( auto &ant: m_ants )
 	{
@@ -31,6 +35,11 @@ Simulation::Simulation() :
 	std::cout << "FIXED TIMESTEP: " << kFixedTimestep << std::endl;
 
 	rlImGuiSetup(true);
+
+	m_camera.rotation = 0;
+	m_camera.zoom     = 1;
+	m_camera.offset   = {0, 0};
+	m_camera.target   = {0, 0};
 }
 
 Simulation::~Simulation()
@@ -61,9 +70,30 @@ void Simulation::Start()
 
 void Simulation::HandleInput()
 {
+	if ( !m_shouldHandleInput )
+	{
+		return;
+	}
+
+	Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), m_camera);
+	float   wheel         = GetMouseWheelMove();
+	if ( wheel != 0.f )
+	{
+		m_camera.offset = GetMousePosition();
+		m_camera.target = mouseWorldPos;
+		m_camera.zoom += wheel * 0.1f;
+		m_camera.zoom   = std::max(m_camera.zoom, 0.1f);
+	}
+
+	if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+	{
+		Vector2 delta = Vector2Scale(GetMouseDelta(), -1.0f / m_camera.zoom);
+		m_camera.target = Vector2Add(m_camera.target, delta);
+	}
+
 	if ( IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
 	{
-		auto      pos    = m_world.ScreenToMap(GetMousePosition().x, GetMousePosition().y);
+		auto      pos    = m_world.ScreenToMap(mouseWorldPos.x, mouseWorldPos.y);
 		int       radius = 5;
 		for ( int y      = -radius; y <= radius; ++y )
 		{
@@ -99,28 +129,34 @@ void Simulation::HandleInput()
 	if ( IsKeyPressed(KEY_EQUAL))
 	{
 		m_gameSpeed += 1;
-		if(m_gameSpeed > 5)
+		if ( m_gameSpeed > 5 )
+		{
 			m_gameSpeed = 5;
+		}
 	}
 
 	if ( IsKeyPressed(KEY_MINUS))
 	{
 		m_gameSpeed -= 1;
-		if(m_gameSpeed < 1)
+		if ( m_gameSpeed < 1 )
+		{
 			m_gameSpeed = 1;
+		}
 	}
 }
 
 void Simulation::Update(double delta)
 {
-	if(GetFPS() < 30)
+	/*
+	if ( GetFPS() < 30 )
 	{
 		m_gameSpeed = std::max(m_gameSpeed - 0.1 * delta, 1.0);
 	}
-	else if (GetFPS() > 60)
+	else if ( GetFPS() > 60 )
 	{
 		m_gameSpeed = std::min(m_gameSpeed + 0.1 * delta, 10.0);
 	}
+	 */
 
 	m_world.Update(delta);
 
@@ -149,8 +185,9 @@ void Simulation::Draw()
 {
 	BeginDrawing();
 
-	ClearBackground(BLACK);
+	ClearBackground({64, 64, 64, 255});
 
+	BeginMode2D(m_camera);
 	m_world.Draw(m_drawHomePheromones, m_drawFoodPheromones);
 
 	if ( m_drawAnts )
@@ -160,25 +197,14 @@ void Simulation::Draw()
 			ant.Draw();
 		}
 	}
+	EndMode2D();
 
 	DrawFPS(1, 1);
 	DrawText(TextFormat("%.0f", m_gameSpeed), 1, 21, 20, BLUE);
 
-	rlImGuiBegin();
-
-	ImGui::Begin("Ants");
-	bool pressed = ImGui::Button("Reset");
-	ImGui::SliderFloat("Simulation speed", &m_gameSpeed, 0.1f, 8.f);
-	ImGui::End();
-
-	rlImGuiEnd();
+	DebugGui();
 
 	EndDrawing();
-
-	if(pressed)
-	{
-		Reset();
-	}
 }
 
 void Simulation::Reset()
@@ -192,4 +218,27 @@ void Simulation::Reset()
 	{
 		ant.Init(kScreenWidth / 2.f, kScreenHeight / 2.f, 40);
 	}
+}
+
+void Simulation::DebugGui()
+{
+	ImGuiIO &io = ImGui::GetIO();
+
+	rlImGuiBegin();
+
+	ImGui::Begin("Ants");
+	bool pressed = ImGui::Button("Reset");
+	ImGui::SliderFloat("Simulation speed", &m_gameSpeed, 0.1f, 8.f);
+	ImGui::Value("FPS: ", GetFPS());
+	m_shouldHandleInput = !( io.WantCaptureMouse || io.WantCaptureKeyboard );
+	ImGui::Value("SHI: ", m_shouldHandleInput);
+
+	ImGui::End();
+
+	if ( pressed )
+	{
+		Reset();
+	}
+
+	rlImGuiEnd();
 }

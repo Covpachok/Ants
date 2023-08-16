@@ -5,13 +5,13 @@
 #include "World.hpp"
 #include "raymath.h"
 
-const float kAntRotationSpeed    = 7;
-const float kAntRandomAngle      = 0.2;
-const float kAntFoodStrengthLoss = 0.015;//15f;
-const float kAntHomeStrengthLoss = 0.005;//15f;
-const int   kAntFovRange         = 12;
-const Color kAntColor            = {0, 255, 255, 127};
-const Color kAntWithFoodColor    = {255, 0, 255, 127};
+const float kAntRotationSpeed    = 12;
+const float kAntRandomAngle      = 0.3;
+const float kAntFoodStrengthLoss = 0.005;//15f;
+const float kAntHomeStrengthLoss = 0.001;//15f;
+int         kAntFovRange         = 8;
+const Color kAntColor            = {255, 255, 0, 127};
+const Color kAntWithFoodColor    = {0, 255, 0, 127};
 
 void Ant::Init(float startX, float startY, float startSpeed)
 {
@@ -124,11 +124,14 @@ void Ant::CheckPheromones(World &world)
 		checkAngleX = std::cos(checkAngleX);
 	}
 
-	for ( int j = 1; j <= kAntFovRange; ++j )
+	int       prevSign  = 0;
+	bool      foundFood = false;
+	for ( int j         = 1; j <= kAntFovRange && !foundFood; ++j )
 	{
 		for ( int i = -j / 2 - 1; i <= j / 2 + 1; ++i )
 		{
-			const int   sign       = ( i > 0 ) - ( i < 0 );
+			foundFood = false;
+			int         sign       = ( i > 0 ) - ( i < 0 );
 			const float multiplier = world.GetScreenToMapRatio() * j;
 
 			checkPos.x = m_pos.x + checkAngles[sign + 1][0] * multiplier;
@@ -144,6 +147,7 @@ void Ant::CheckPheromones(World &world)
 				if ( world.GetCell(checkMapPos.first, checkMapPos.second).type == World::Food )
 				{
 					checkedPheromone = 9999;
+					foundFood        = true;
 				}
 				else
 				{
@@ -155,6 +159,24 @@ void Ant::CheckPheromones(World &world)
 			{
 				strongestPheromone = checkedPheromone;
 				turnSide           = sign * M_PI_4;
+			}
+			else if ( checkedPheromone == strongestPheromone )
+			{
+				if ( sign == 0 || prevSign == 0 )
+				{
+					turnSide = 0;
+				}
+				else
+				{
+					turnSide = sign * M_PI_4;
+				}
+			}
+
+			prevSign = sign;
+
+			if ( foundFood )
+			{
+				break;
 			}
 		}
 	}

@@ -7,7 +7,7 @@ const Color kHomePheromoneColor = {0, 0, 127, 0};
 
 const Color kCellColors[2]        = {{0, 0,   0, 255},
                                      {0, 127, 0, 255}};
-const int   kCellDefaultAmount[2] = {0, 100};
+const int   kCellDefaultAmount[2] = {0, 30};
 
 void World::Init(int width, int height, double homeEvaporationRate, double foodEvaporationRate)
 {

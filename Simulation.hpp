@@ -20,6 +20,8 @@ private:
 
 	void Reset();
 
+	void DebugGui();
+
 private:
 	std::list<Ant> m_ants;
 	World m_world;
@@ -31,6 +33,10 @@ private:
 	bool m_drawAnts = true;
 
 	float m_gameSpeed = 1;
+
+	Camera2D m_camera;
+
+	bool m_shouldHandleInput = true;
 };
 
 

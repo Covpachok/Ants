@@ -15,7 +15,7 @@ set(IMGUI_SOURCES
         ${IMGUI_FOLDER}/imgui_widgets.cpp
         ${IMGUI_FOLDER}/imgui_tables.cpp
         libs/rlImGui/rlImGui.cpp
-        )
+        AntValueTable.hpp)
 
 add_subdirectory(libs/raylib)
 include_directories(${IMGUI_FOLDER})
