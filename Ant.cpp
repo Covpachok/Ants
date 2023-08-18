@@ -1,40 +1,57 @@
 #include "Ant.hpp"
 #include <cmath>
 #include <random>
-#include <iostream>
 #include "World.hpp"
-#include "raymath.h"
+#include "ValueTable.hpp"
 
-const float kAntRotationSpeed    = 12;
-const float kAntRandomAngle      = 0.3;
-const float kAntFoodStrengthLoss = 0.005;//15f;
-const float kAntHomeStrengthLoss = 0.001;//15f;
-int         kAntFovRange         = 8;
-const Color kAntColor            = {255, 255, 0, 127};
-const Color kAntWithFoodColor    = {0, 255, 0, 127};
+const float k_antRotationSpeed    = 12;
+const float k_antRandomAngle      = 0.3;
+const float k_antFoodStrengthLoss = 0.01;//15f;
+const float k_antHomeStrengthLoss = 0.01;//15f;
+const int   k_antFovRange         = 12;
+const Color k_antColor            = {255, 255, 0, 127};
+const Color k_antWithFoodColor    = {0, 255, 0, 127};
+
 
 void Ant::Init(float startX, float startY, float startSpeed)
 {
+	m_table = &g_valueTable.GetAntsTable();
+
 	m_pos          = {startX, startY};
-	m_speed        = startSpeed;
 	m_angle        = GetRandomValue(M_PI * -100, M_PI * 100) / 100.0;
 	m_desiredAngle = m_angle;
-	m_color        = kAntColor;
 }
 
-void Ant::Update(float delta)
+void Ant::Update(float delta, World &world)
 {
-	m_foodStrength = std::max(m_foodStrength - delta * kAntFoodStrengthLoss, 0.f);
-	m_homeStrength = std::max(m_homeStrength - delta * kAntHomeStrengthLoss, 0.f);
+	m_lastPheromoneSpawnTime += delta;
+	m_lastCollisionCheckTime += delta;
+
+	if ( m_lastCollisionCheckTime > m_table->antCollisionCheckDelay )
+	{
+		CheckCollisions(world);
+		m_lastCollisionCheckTime = 0;
+	}
+
+	m_foodStrength = std::max(m_foodStrength - delta * k_antFoodStrengthLoss, 0.f);
+	m_homeStrength = std::max(m_homeStrength - delta * k_antHomeStrengthLoss, 0.f);
 
 	Rotate(delta);
 	Move(delta);
+
+	if ( m_lastPheromoneSpawnTime > m_table->pheromoneSpawnDelay )
+	{
+		SpawnPheromone(world);
+		m_lastPheromoneSpawnTime = 0;
+	}
 }
 
 void Ant::Move(float delta)
 {
-	m_pos.x += m_speed * std::cos(m_angle) * delta;
-	m_pos.y += m_speed * std::sin(m_angle) * delta;
+	auto speed = m_table->antMovementSpeed * delta;
+
+	m_pos.x += speed * std::cos(m_angle);
+	m_pos.y += speed * std::sin(m_angle);
 
 	StayOnScreen();
 }
@@ -44,7 +61,7 @@ void Ant::Rotate(float delta)
 	static std::random_device               rd;
 	static std::mt19937                     gen(rd());
 	static std::uniform_real_distribution<> dis(-1.0, 1.0);
-	float                                   randomAngle = dis(gen) * kAntRandomAngle;
+	float                                   randomAngle = dis(gen) * k_antRandomAngle;
 
 	m_desiredAngle += randomAngle;
 
@@ -57,7 +74,21 @@ void Ant::Rotate(float delta)
 	{
 		angleDiff += 2 * M_PI;
 	}
-	m_angle += angleDiff * kAntRotationSpeed * delta;
+	m_angle += angleDiff * k_antRotationSpeed * delta;
+}
+
+void Ant::SpawnPheromone(World &world)
+{
+	auto pos = world.ScreenToMap(m_pos.x, m_pos.y);
+
+	if ( m_gotFood )
+	{
+		world.AddFoodPheromone(pos.first, pos.second, m_table->foodPheromoneIntensity * m_foodStrength);
+	}
+	else
+	{
+		world.AddHomePheromone(pos.first, pos.second, m_table->homePheromoneIntensity * m_homeStrength);
+	}
 }
 
 void Ant::CheckCollisions(World &world)
@@ -72,7 +103,6 @@ void Ant::CheckCollisions(World &world)
 		if ( m_gotFood )
 		{
 			m_gotFood = false;
-			m_color   = kAntColor;
 			TurnBackward();
 			return;
 		}
@@ -88,7 +118,6 @@ void Ant::CheckCollisions(World &world)
 		{
 			world.DecreaseCell(checkMapPos.first, checkMapPos.second);
 			m_gotFood = true;
-			m_color   = kAntWithFoodColor;
 			TurnBackward();
 		}
 	}
@@ -126,7 +155,7 @@ void Ant::CheckPheromones(World &world)
 
 	int       prevSign  = 0;
 	bool      foundFood = false;
-	for ( int j         = 1; j <= kAntFovRange && !foundFood; ++j )
+	for ( int j         = 1; j <= k_antFovRange && !foundFood; ++j )
 	{
 		for ( int i = -j / 2 - 1; i <= j / 2 + 1; ++i )
 		{
@@ -199,8 +228,8 @@ void Ant::ChangeDesiredAngle(Vector2 desiredPos)
 
 void Ant::Draw()
 {
-//	DrawCircle(m_pos.x, m_pos.y, 2, m_gotFood ? kAntWithFoodColor : kAntColor);
-	DrawCircleSector(m_pos, 1, 0, 360, 1, m_color);
+//	DrawCircle(m_pos.x, m_pos.y, 2, m_gotFood ? k_antWithFoodColor : k_antColor);
+	DrawCircleSector(m_pos, 2, 0, 360, 1, *m_table->antColorPtr[m_gotFood]);
 //	auto forward  = Vector2Rotate({10, 0}, m_angle);
 //	auto dforward = Vector2Rotate({10, 0}, m_desiredAngle);
 //	DrawLineV(m_pos, Vector2Add(m_pos, forward), BLUE);
@@ -212,23 +241,35 @@ void Ant::StayOnScreen()
 	const float width  = (float) GetScreenWidth();
 	const float height = (float) GetScreenHeight();
 
+	bool out = false;
+
 	if ( m_pos.x >= width )
 	{
-		m_pos.x = 0;
+		m_pos.x = width;
+		out = true;
 	}
 	else if ( m_pos.x < 0 )
 	{
-		m_pos.x = width;
+		m_pos.x = 0;
+		out = true;
 	}
 
 	if ( m_pos.y >= height )
 	{
-		m_pos.y = 0;
+		m_pos.y = height;
+		out = true;
 	}
 	else if ( m_pos.y < 0 )
 	{
-		m_pos.y = height;
+		m_pos.y = 0;
+		out = true;
 	}
+
+	if(out)
+	{
+		TurnBackward();
+	}
+
 #if 0
 	const int offset       = 3;
 	const int doubleOffset = offset * 2;

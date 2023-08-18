@@ -3,6 +3,7 @@
 
 #include "Ant.hpp"
 #include "World.hpp"
+#include "ValueTable.hpp"
 
 #include <list>
 
@@ -37,6 +38,9 @@ private:
 	Camera2D m_camera;
 
 	bool m_shouldHandleInput = true;
+	bool m_adaptiveSpeed = false;
+
+	bool m_showSimulationVariables = false;
 };
 
 

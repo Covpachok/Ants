@@ -1,0 +1,40 @@
+//
+// Created by heylc on 16.08.2023.
+//
+
+#ifndef ANTS_COLORCONVERT_HPP
+#define ANTS_COLORCONVERT_HPP
+
+#include <imgui.h>
+#include <raylib.h>
+
+namespace ColorConvert
+{
+	struct ImGuiColor
+	{
+		float color[4];
+	};
+
+	inline unsigned char FloatToUchar(float value)
+	{
+		return static_cast<unsigned char>(value * 255.f);
+	}
+
+	inline float UcharToFloat(unsigned char value)
+	{
+		return static_cast<float>(value) / 255.f;
+	}
+
+	inline Color Float4ToRayColor(float value[4])
+	{
+		return {FloatToUchar(value[0]), FloatToUchar(value[1]), FloatToUchar(value[2]), FloatToUchar(value[3])};
+	};
+
+	inline ImGuiColor RayColorToFloat4(Color value)
+	{
+		return ImGuiColor{UcharToFloat(value.r), UcharToFloat(value.g), UcharToFloat(value.b), UcharToFloat(value.a)};
+	}
+}
+
+
+#endif //ANTS_COLORCONVERT_HPP

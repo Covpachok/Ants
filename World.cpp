@@ -2,17 +2,19 @@
 #include <algorithm>
 #include "World.hpp"
 
-const Color kFoodPheromoneColor = {127, 0, 0, 0};
-const Color kHomePheromoneColor = {0, 0, 127, 0};
+const Color k_foodPheromoneColor = {127, 0, 0, 0};
+const Color k_homePheromoneColor = {0, 0, 127, 0};
 
-const Color kCellColors[2]        = {{0, 0,   0, 255},
-                                     {0, 127, 0, 255}};
-const int   kCellDefaultAmount[2] = {0, 30};
+const Color k_cellColors[2]        = {{0, 0,   0, 255},
+                                      {0, 127, 0, 255}};
+const int   k_cellDefaultAmount[2] = {0, 15};
 
 void World::Init(int width, int height, double homeEvaporationRate, double foodEvaporationRate)
 {
 	m_width  = width;
 	m_height = height;
+
+	m_homePos = {m_width / 2, m_height / 2};
 
 	m_worldMap = new Cell[m_height * m_width];
 
@@ -30,11 +32,11 @@ void World::Init(int width, int height, double homeEvaporationRate, double foodE
 		m_foodPheromoneMap[i] = 0;
 	}
 
-	m_homePheromoneImage    = GenImageColor(m_width, m_height, kHomePheromoneColor);
+	m_homePheromoneImage    = GenImageColor(m_width, m_height, k_homePheromoneColor);
 	m_homePheromoneTexture  = LoadTextureFromImage(m_homePheromoneImage);
 	m_homePheromoneColorMap = LoadImageColors(m_homePheromoneImage);
 
-	m_foodPheromoneImage    = GenImageColor(m_width, m_height, kFoodPheromoneColor);
+	m_foodPheromoneImage    = GenImageColor(m_width, m_height, k_foodPheromoneColor);
 	m_foodPheromoneTexture  = LoadTextureFromImage(m_foodPheromoneImage);
 	m_foodPheromoneColorMap = LoadImageColors(m_foodPheromoneImage);
 
@@ -88,9 +90,9 @@ void World::SetCell(int x, int y, CellType type)
 	int index = ToMapIndex(x, y);
 
 	m_worldMap[index].type   = type;
-	m_worldMap[index].amount = kCellDefaultAmount[type];
+	m_worldMap[index].amount = k_cellDefaultAmount[type];
 
-	m_worldColorMap[ToMapIndex(x, y)] = kCellColors[type];
+	m_worldColorMap[ToMapIndex(x, y)] = k_cellColors[type];
 
 	UpdateTexture(m_worldTexture, m_worldColorMap);
 }
@@ -180,6 +182,8 @@ void World::Draw(bool h, bool f) const
 	{
 		DrawTexturePro(m_foodPheromoneTexture, src, dest, {0, 0}, 0, WHITE);
 	}
+
+	DrawCircleSector(GetScreenHomePos(), GetScreenHomeRadius(), 0.f, 360.f, 12, BLUE);
 }
 
 void World::Erase()

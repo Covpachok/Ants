@@ -4,35 +4,45 @@
 #include <raymath.h>
 #include <imgui.h>
 #include <rlImGui.h>
+#include "ColorConvert.hpp"
 
-const int kScreenWidth  = 1280;
-const int kScreenHeight = 720;
+const int k_screenWidth  = 1280;
+const int k_screenHeight = 720;
 
-const float kFoodPheromoneIntensity = 10;
-const float kHomePheromoneIntensity = 10;
+/*
+const float k_foodPheromoneIntensity = 10;
+const float k_homePheromoneIntensity = 10;
 
-const float kFoodPheromoneEvaporationRate = 2;
-const float kHomePheromoneEvaporationRate = 2;
+const float k_foodPheromoneEvaporationRate = 2;
+const float k_homePheromoneEvaporationRate = 2;
+ */
 
-const double kFixedTimestep = ( 1000.0 / 60.0 ) / 1000.0;
+const float k_foodPheromoneIntensity = 800;
+const float k_homePheromoneIntensity = 800;
 
-const int kAntsAmount = 2000;
+const float k_foodPheromoneEvaporationRate = 10;
+const float k_homePheromoneEvaporationRate = 10;
+
+const double k_fixedTimestep = ( 1000.0 / 60.0 ) / 1000.0;
+
+//const int k_antsAmount = 2000;
+const int k_antsAmount = 500;
 
 Simulation::Simulation() :
-		m_ants(2000)
+		m_ants(k_antsAmount)
 {
-	InitWindow(kScreenWidth, kScreenHeight, "Ants");
+	InitWindow(k_screenWidth, k_screenHeight, "Ants");
 
-	m_world.Init(kScreenWidth / 4, kScreenHeight / 4, kHomePheromoneEvaporationRate, kFoodPheromoneEvaporationRate);
+	m_world.Init(k_screenWidth / 3, k_screenHeight / 3, k_homePheromoneEvaporationRate, k_foodPheromoneEvaporationRate);
 
 	for ( auto &ant: m_ants )
 	{
-		ant.Init(kScreenWidth / 2.f, kScreenHeight / 2.f, 40);
+		ant.Init(k_screenWidth / 2.f, k_screenHeight / 2.f, 40);
 	}
 
 //	SetTargetFPS(60);
 
-	std::cout << "FIXED TIMESTEP: " << kFixedTimestep << std::endl;
+	std::cout << "FIXED TIMESTEP: " << k_fixedTimestep << std::endl;
 
 	rlImGuiSetup(true);
 
@@ -59,10 +69,10 @@ void Simulation::Start()
 		{
 			deltaTime += GetFrameTime() * m_gameSpeed;
 
-			while ( deltaTime >= kFixedTimestep )
+			while ( deltaTime >= k_fixedTimestep )
 			{
-				deltaTime -= kFixedTimestep;
-				Update(kFixedTimestep);
+				deltaTime -= k_fixedTimestep;
+				Update(k_fixedTimestep);
 			}
 		}
 	}
@@ -105,7 +115,6 @@ void Simulation::HandleInput()
 				}
 			}
 		}
-//		m_world.SetCell(pos.first, pos.second, World::Food);
 	}
 
 	if ( IsKeyPressed(KEY_SPACE))
@@ -147,38 +156,51 @@ void Simulation::HandleInput()
 
 void Simulation::Update(double delta)
 {
-	/*
-	if ( GetFPS() < 30 )
+	SetWindowTitle(( "Ants FPS:" + std::to_string(GetFPS())).c_str());
+
+	if ( m_adaptiveSpeed )
 	{
-		m_gameSpeed = std::max(m_gameSpeed - 0.1 * delta, 1.0);
+		const int fps = GetFPS();
+		if ( fps < 10 )
+		{
+			m_gameSpeed = std::max(m_gameSpeed - 0.5 * delta, 1.0);
+		}
+		else if ( fps < 30 )
+		{
+			m_gameSpeed = std::max(m_gameSpeed - 0.1 * delta, 1.0);
+		}
+
+		if ( fps > 144 )
+		{
+			m_gameSpeed = std::min(m_gameSpeed + 0.5 * delta, 20.0);
+		}
+		else if ( fps > 60 )
+		{
+			m_gameSpeed = std::min(m_gameSpeed + 0.1 * delta, 20.0);
+		}
 	}
-	else if ( GetFPS() > 60 )
-	{
-		m_gameSpeed = std::min(m_gameSpeed + 0.1 * delta, 10.0);
-	}
-	 */
 
 	m_world.Update(delta);
 
 	for ( auto &ant: m_ants )
 	{
-		ant.CheckCollisions(m_world);
+		ant.Update(delta, m_world);
 
-		ant.Update(delta);
+		/*
+			auto pos = ant.GetPos();
+	//		int  y   = floor(pos.y), x = floor(pos.x);
+			auto p   = m_world.ScreenToMap(pos.x, pos.y);
 
-		auto pos = ant.GetPos();
-//		int  y   = floor(pos.y), x = floor(pos.x);
-		auto p   = m_world.ScreenToMap(pos.x, pos.y);
-
-		if ( ant.IsGotFood())
-		{
-			m_world.AddFoodPheromone(p.first, p.second, kFoodPheromoneIntensity * delta * ant.GetFoodStrength());
+			if ( ant.IsGotFood())
+			{
+				m_world.AddFoodPheromone(p.first, p.second, k_foodPheromoneIntensity * delta * ant.GetFoodStrength());
+			}
+			else
+			{
+				m_world.AddHomePheromone(p.first, p.second, k_homePheromoneIntensity * delta * ant.GetHomeStrength());
+			}
+		 */
 		}
-		else
-		{
-			m_world.AddHomePheromone(p.first, p.second, kHomePheromoneIntensity * delta * ant.GetHomeStrength());
-		}
-	}
 }
 
 void Simulation::Draw()
@@ -199,9 +221,6 @@ void Simulation::Draw()
 	}
 	EndMode2D();
 
-	DrawFPS(1, 1);
-	DrawText(TextFormat("%.0f", m_gameSpeed), 1, 21, 20, BLUE);
-
 	DebugGui();
 
 	EndDrawing();
@@ -209,29 +228,45 @@ void Simulation::Draw()
 
 void Simulation::Reset()
 {
-	m_world.Reset(kScreenWidth / 4, kScreenHeight / 4, 5, 5);
+	m_world.Reset(k_screenWidth / 4, k_screenHeight / 4, 5, 5);
 
 	m_ants.clear();
-	m_ants.resize(kAntsAmount);
+	m_ants.resize(k_antsAmount);
 
 	for ( auto &ant: m_ants )
 	{
-		ant.Init(kScreenWidth / 2.f, kScreenHeight / 2.f, 40);
+		ant.Init(k_screenWidth / 2.f, k_screenHeight / 2.f, 40);
 	}
 }
 
 void Simulation::DebugGui()
 {
 	ImGuiIO &io = ImGui::GetIO();
+	m_shouldHandleInput = !( io.WantCaptureMouse || io.WantCaptureKeyboard );
 
 	rlImGuiBegin();
 
 	ImGui::Begin("Ants");
+
+	ImGui::SeparatorText("Draw settings");
+
+	ImGui::Checkbox("Home", &m_drawHomePheromones);
+	ImGui::SameLine();
+	ImGui::Checkbox("Food", &m_drawFoodPheromones);
+	ImGui::SameLine();
+	ImGui::Checkbox("Ants", &m_drawAnts);
+
+	ImGui::SeparatorText("Simulation settings");
+
+	ImGui::Checkbox("Adaptive simulation speed", &m_adaptiveSpeed);
+	ImGui::SliderFloat("Simulation speed", &m_gameSpeed, 0.1f, 20.f);
+
+	ImGui::SeparatorText("Other");
+
+	ImGui::Checkbox("Show simulation variables", &m_showSimulationVariables);
+
 	bool pressed = ImGui::Button("Reset");
-	ImGui::SliderFloat("Simulation speed", &m_gameSpeed, 0.1f, 8.f);
-	ImGui::Value("FPS: ", GetFPS());
-	m_shouldHandleInput = !( io.WantCaptureMouse || io.WantCaptureKeyboard );
-	ImGui::Value("SHI: ", m_shouldHandleInput);
+
 
 	ImGui::End();
 
@@ -239,6 +274,70 @@ void Simulation::DebugGui()
 	{
 		Reset();
 	}
+
+	if ( !m_showSimulationVariables )
+	{
+		rlImGuiEnd();
+		return;
+	}
+
+	ImGui::Begin("Simulation variables");
+
+	auto &antsValueTable  = g_valueTable.GetMutableAntsTable();
+	auto &worldValueTable = g_valueTable.GetMutableWorldTable();
+
+
+	ImGui::SeparatorText("Realtime change");
+
+	if(ImGui::CollapsingHeader("Colors"))
+	{
+		ImGui::SeparatorText("Ant colors");
+
+		auto imguiColor = ColorConvert::RayColorToFloat4(antsValueTable.antDefaultColor);
+		ImGui::ColorEdit4("Default", imguiColor.color);
+		antsValueTable.antDefaultColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+
+		imguiColor = ColorConvert::RayColorToFloat4(antsValueTable.antWithFoodColor);
+		ImGui::ColorEdit4("With food", imguiColor.color);
+		antsValueTable.antWithFoodColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+
+		ImGui::SeparatorText("World colors");
+
+		imguiColor = ColorConvert::RayColorToFloat4(worldValueTable.homePheromoneColor);
+		ImGui::ColorEdit4("Home pheromone", imguiColor.color);
+		worldValueTable.homePheromoneColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+
+		imguiColor = ColorConvert::RayColorToFloat4(worldValueTable.foodPheromoneColor);
+		ImGui::ColorEdit4("Food pheromone", imguiColor.color);
+		worldValueTable.foodPheromoneColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+	}
+
+	ImGui::SeparatorText("Change only after reset");
+
+	if(ImGui::CollapsingHeader("Ants behaviour"))
+	{
+		ImGui::SeparatorText("Movement");
+
+		ImGui::InputFloat("Movement speed", &antsValueTable.antMovementSpeed);
+		ImGui::InputFloat("Rotation speed", &antsValueTable.antRotationSpeed);
+		ImGui::InputFloat("Random angle", &antsValueTable.antRandomAngle);
+
+		ImGui::SeparatorText("Perception");
+
+		ImGui::InputInt("FOV range", &antsValueTable.antFovRange);
+
+		ImGui::SeparatorText("Other");
+
+		ImGui::InputFloat("Home pheromone strength loss", &antsValueTable.antHomeStrengthLoss);
+		ImGui::InputFloat("Food pheromone strength loss", &antsValueTable.antFoodStrengthLoss);
+	}
+
+	if(ImGui::CollapsingHeader("World variables"))
+	{
+
+	}
+
+	ImGui::End();
 
 	rlImGuiEnd();
 }
