@@ -43,7 +43,12 @@ private:
 
 	void CheckPheromones(World &world);
 
+	void RandomizeAngle(float pi = M_PI);
+
+	void RandomizeDesiredAngle(float pi = M_PI);
+
 private:
+	Vector2 m_prevPos;
 	Vector2 m_pos;
 
 	const AntsValueTable *m_table;
@@ -57,8 +62,7 @@ private:
 	bool m_gotFood = false;
 
 	float m_lastPheromoneSpawnTime = 0;
-	float m_lastCollisionCheckTime = 0;
-
+	float m_lastPheromoneCheckTime = 0;
 };
 
 

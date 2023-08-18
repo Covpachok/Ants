@@ -5,9 +5,10 @@
 const Color k_foodPheromoneColor = {127, 0, 0, 0};
 const Color k_homePheromoneColor = {0, 0, 127, 0};
 
-const Color k_cellColors[2]        = {{0, 0,   0, 255},
-                                      {0, 127, 0, 255}};
-const int   k_cellDefaultAmount[2] = {0, 15};
+const Color k_cellColors[3]        = {{0, 0,   0, 255},
+                                      {0, 127, 0, 255},
+                                      {255, 255, 255, 255}};
+const int   k_cellDefaultAmount[3] = {0, 30, 0};
 
 void World::Init(int width, int height, double homeEvaporationRate, double foodEvaporationRate)
 {
@@ -92,7 +93,10 @@ void World::SetCell(int x, int y, CellType type)
 	m_worldMap[index].type   = type;
 	m_worldMap[index].amount = k_cellDefaultAmount[type];
 
-	m_worldColorMap[ToMapIndex(x, y)] = k_cellColors[type];
+	auto mapIndex = ToMapIndex(x, y);
+	m_worldColorMap[mapIndex] = k_cellColors[type];
+	m_homePheromoneMap[mapIndex] = 0;
+	m_foodPheromoneMap[mapIndex] = 0;
 
 	UpdateTexture(m_worldTexture, m_worldColorMap);
 }

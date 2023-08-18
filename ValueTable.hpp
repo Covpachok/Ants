@@ -18,16 +18,17 @@ struct AntsValueTable
 	float antFoodStrengthLoss = 0.015;
 	float antHomeStrengthLoss = 0.005;
 
-	float foodPheromoneIntensity = 255;
-	float homePheromoneIntensity = 255;
+	float foodPheromoneIntensity = 128;
+	float homePheromoneIntensity = 128;
 
 	float pheromoneSpawnDelay = 0.25f;
-	float antCollisionCheckDelay = 0.05f;
 
-	float deviationFrequency = 0.05f; // in %
+	// VERY IMPORTANT VALUE 0.05
+	float antPheromoneCheckDelay = 0.05f; // DO NOT CHANGE
 
-	Color antDefaultColor  = {128, 128, 255, 127};
-	Color antWithFoodColor = {128, 255, 128, 127};
+
+	Color antDefaultColor  = {128, 128, 255, 128};
+	Color antWithFoodColor = {128, 255, 128, 128};
 	Color *antColorPtr[2]  = {&antDefaultColor, &antWithFoodColor};
 };
 
@@ -47,7 +48,7 @@ struct WorldValueTable
 	double homePheromoneEvaporationRate = 2;
 	double foodPheromoneEvaporationRate = 2;
 
-	int antsAmount = 2000;
+	int antsAmount = 1000;
 };
 
 class ValueTable
