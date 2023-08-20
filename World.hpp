@@ -2,6 +2,7 @@
 #define ANTS_WORLD_HPP
 
 #include "raylib.h"
+#include "ValueTable.hpp"
 
 class World
 {
@@ -18,7 +19,7 @@ public:
 	};
 
 public:
-	void Init(int width, int height, double homeEvaporationRate, double foodEvaporationRate);
+	void Init(int width, int height);
 
 	~World();
 
@@ -36,39 +37,44 @@ public:
 
 	void Draw(bool h = true, bool f = true) const;
 
-	std::pair<int, int> ScreenToMap(float x, float y) const
+	inline std::pair<int, int> ScreenToWorld(float x, float y) const
 	{
-		return {x / m_screenToMapRatio, y / m_screenToMapRatio};
+		return {x / m_screenToWorldRatio, y / m_screenToWorldRatio};
 	}
 
-	Vector2 MapToScreen(int x, int y) const
+	inline std::pair<int, int> ScreenToWorld(Vector2 pos) const
 	{
-		return {x * m_screenToMapRatio, y * m_screenToMapRatio};
+		return ScreenToWorld(pos.x, pos.y);
 	}
 
-	float GetScreenToMapRatio() const { return m_screenToMapRatio; }
+	inline Vector2 WorldToScreen(int x, int y) const
+	{
+		return {x * m_screenToWorldRatio, y * m_screenToWorldRatio};
+	}
 
-	std::pair<int, int> GetHomePos() const { return m_homePos; }
-	int GetHomeRadius() const { return 5; }
+	inline float GetScreenToWorldRatio() const { return m_screenToWorldRatio; }
 
-	Vector2 GetScreenHomePos() const { return {GetScreenWidth() / 2.f, GetScreenHeight() / 2.f}; }
-	float GetScreenHomeRadius() const { return GetHomeRadius() * m_screenToMapRatio; }
+	inline Vector2 GetScreenHomePos() const { return m_screenHomePos; }
+	inline float GetScreenHomeRadius() const { return m_screenHomeRadius; }
 
-	void Reset(int width, int height, double homeEvaporationRate, double foodEvaporationRate);
+	inline bool IsInBounds(int x, int y) const { return x >= 0 && x < m_width && y >= 0 && y < m_height; }
+	inline bool IsInBounds(std::pair<int, int> pos) const { return IsInBounds(pos.first, pos.second); }
 
-private:
+	void Reset(int width, int height);
 	void Erase();
 
-	int ToMapIndex(int x, int y) const { return ( y * m_width ) + x; }
-	bool InBounds(int x, int y) const { return x >= 0 && x < m_width && y >= 0 && y < m_height; }
+private:
+	inline int ToMapIndex(int x, int y) const { return ( y * m_width ) + x; }
 
 private:
+	const WorldValueTable *m_valueTable;
+
 	int m_width;
 	int m_height;
 
-	std::pair<int, int> m_homePos;
+	float m_screenToWorldRatio;
 
-	float m_screenToMapRatio;
+	// -------------
 
 	Cell *m_worldMap;
 
@@ -89,6 +95,20 @@ private:
 	Image   m_foodPheromoneImage{};
 	Texture m_foodPheromoneTexture{};
 	Color   *m_foodPheromoneColorMap;
+
+	// -------------
+
+	std::pair<int, int> m_homePos;
+	int                 m_homeRadius;
+
+	Vector2 m_screenHomePos;
+	float   m_screenHomeRadius;
+
+	// -------------
+
+	Color m_homeColor;
+	Color m_cellColors[k_cellsAmount];
+	int   m_cellDefaultAmount[k_cellsAmount];
 };
 
 

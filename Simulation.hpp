@@ -15,6 +15,8 @@ public:
 	void Start();
 
 private:
+	void Init();
+
 	void HandleInput();
 	void Update(double delta);
 	void Draw();
@@ -41,6 +43,8 @@ private:
 	bool m_adaptiveSpeed = false;
 
 	bool m_showSimulationVariables = false;
+
+	bool m_choosingHomePos = false;
 };
 
 

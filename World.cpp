@@ -1,27 +1,19 @@
-#include <cassert>
 #include <algorithm>
+#include <iostream>
 #include "World.hpp"
 
-const Color k_foodPheromoneColor = {127, 0, 0, 0};
-const Color k_homePheromoneColor = {0, 0, 127, 0};
-
-const Color k_cellColors[3]        = {{0, 0,   0, 255},
-                                      {0, 127, 0, 255},
-                                      {255, 255, 255, 255}};
-const int   k_cellDefaultAmount[3] = {0, 30, 0};
-
-void World::Init(int width, int height, double homeEvaporationRate, double foodEvaporationRate)
+void World::Init(int width, int height)
 {
+	m_valueTable = &g_valueTable.GetWorldTable();
+
 	m_width  = width;
 	m_height = height;
 
-	m_homePos = {m_width / 2, m_height / 2};
+	m_screenToWorldRatio = static_cast<float>(GetScreenWidth()) / static_cast<float>(m_width);
 
-	m_worldMap = new Cell[m_height * m_width];
+	// -------------
 
-	m_homePheromoneEvaporationRate = homeEvaporationRate;
-	m_foodPheromoneEvaporationRate = foodEvaporationRate;
-
+	m_worldMap         = new Cell[m_height * m_width];
 	m_homePheromoneMap = new double[m_height * m_width];
 	m_foodPheromoneMap = new double[m_height * m_width];
 
@@ -33,11 +25,13 @@ void World::Init(int width, int height, double homeEvaporationRate, double foodE
 		m_foodPheromoneMap[i] = 0;
 	}
 
-	m_homePheromoneImage    = GenImageColor(m_width, m_height, k_homePheromoneColor);
+	// -------------
+
+	m_homePheromoneImage    = GenImageColor(m_width, m_height, m_valueTable->homePheromoneColor);
 	m_homePheromoneTexture  = LoadTextureFromImage(m_homePheromoneImage);
 	m_homePheromoneColorMap = LoadImageColors(m_homePheromoneImage);
 
-	m_foodPheromoneImage    = GenImageColor(m_width, m_height, k_foodPheromoneColor);
+	m_foodPheromoneImage    = GenImageColor(m_width, m_height, m_valueTable->foodPheromoneColor);
 	m_foodPheromoneTexture  = LoadTextureFromImage(m_foodPheromoneImage);
 	m_foodPheromoneColorMap = LoadImageColors(m_foodPheromoneImage);
 
@@ -45,7 +39,37 @@ void World::Init(int width, int height, double homeEvaporationRate, double foodE
 	m_worldTexture  = LoadTextureFromImage(m_worldImage);
 	m_worldColorMap = LoadImageColors(m_worldImage);
 
-	m_screenToMapRatio = (float) GetScreenWidth() / (float) m_width;
+	// -------------
+
+	for ( int i = 0; i < k_cellsAmount; ++i )
+	{
+		m_cellColors[i]        = m_valueTable->cellColors[i];
+		m_cellDefaultAmount[i] = m_valueTable->cellDefaultAmount[i];
+	}
+
+	// -------------
+
+	m_homePheromoneEvaporationRate = m_valueTable->homePheromoneEvaporationRate;
+	m_foodPheromoneEvaporationRate = m_valueTable->foodPheromoneEvaporationRate;
+
+	// -------------
+
+	m_homeColor = m_valueTable->homePheromoneColor;
+	m_homeColor.a = 255;
+
+	m_homeRadius = m_valueTable->homeRadius;
+	if ( m_valueTable->centeredHomePos )
+	{
+		m_homePos = {m_width / 2, m_height / 2};
+	}
+	else
+	{
+		m_homePos = {m_valueTable->homePos[0], m_valueTable->homePos[1]};
+	}
+
+	m_screenHomePos    = {static_cast<float>(m_homePos.first) * m_screenToWorldRatio,
+	                      static_cast<float>(m_homePos.second) * m_screenToWorldRatio};
+	m_screenHomeRadius = static_cast<float>(m_homeRadius) * m_screenToWorldRatio;
 }
 
 World::~World()
@@ -55,14 +79,13 @@ World::~World()
 
 void World::Update(double delta)
 {
-	int       homeRadius = GetHomeRadius() * 1;
-	for ( int y          = -homeRadius; y < homeRadius; ++y )
+	for ( int y = -m_homeRadius; y < m_homeRadius; ++y )
 	{
-		for ( int x = -homeRadius; x < homeRadius; ++x )
+		for ( int x = -m_homeRadius; x < m_homeRadius; ++x )
 		{
-			if ( x * x + y * y <= homeRadius * homeRadius )
+			if ( x * x + y * y <= m_homeRadius * m_homeRadius )
 			{
-				int index = ToMapIndex(GetHomePos().first + x, GetHomePos().second + y);
+				int index = ToMapIndex(m_homePos.first + x, m_homePos.second + y);
 				m_homePheromoneMap[index] = 1000;
 			}
 		}
@@ -83,7 +106,7 @@ void World::Update(double delta)
 
 void World::SetCell(int x, int y, CellType type)
 {
-	if ( !InBounds(x, y))
+	if ( !IsInBounds(x, y))
 	{
 		return;
 	}
@@ -91,10 +114,10 @@ void World::SetCell(int x, int y, CellType type)
 	int index = ToMapIndex(x, y);
 
 	m_worldMap[index].type   = type;
-	m_worldMap[index].amount = k_cellDefaultAmount[type];
+	m_worldMap[index].amount = m_cellDefaultAmount[type];
 
 	auto mapIndex = ToMapIndex(x, y);
-	m_worldColorMap[mapIndex] = k_cellColors[type];
+	m_worldColorMap[mapIndex]    = m_cellColors[type];
 	m_homePheromoneMap[mapIndex] = 0;
 	m_foodPheromoneMap[mapIndex] = 0;
 
@@ -103,7 +126,7 @@ void World::SetCell(int x, int y, CellType type)
 
 void World::DecreaseCell(int x, int y)
 {
-	if ( !InBounds(x, y))
+	if ( !IsInBounds(x, y))
 	{
 		return;
 	}
@@ -120,7 +143,7 @@ void World::DecreaseCell(int x, int y)
 
 const World::Cell &World::GetCell(int x, int y) const
 {
-	if ( !InBounds(x, y))
+	if ( !IsInBounds(x, y))
 	{
 		return m_worldMap[ToMapIndex(0, 0)];
 	}
@@ -130,7 +153,7 @@ const World::Cell &World::GetCell(int x, int y) const
 
 void World::AddHomePheromone(int x, int y, double intensity)
 {
-	if ( !InBounds(x, y))
+	if ( !IsInBounds(x, y))
 	{
 		return;
 	}
@@ -142,7 +165,7 @@ void World::AddHomePheromone(int x, int y, double intensity)
 
 void World::AddFoodPheromone(int x, int y, double intensity)
 {
-	if ( !InBounds(x, y))
+	if ( !IsInBounds(x, y))
 	{
 		return;
 	}
@@ -154,7 +177,7 @@ void World::AddFoodPheromone(int x, int y, double intensity)
 
 double World::GetFoodPheromone(int x, int y) const
 {
-	if ( !InBounds(x, y))
+	if ( !IsInBounds(x, y))
 	{
 		return 0;
 	}
@@ -164,14 +187,13 @@ double World::GetFoodPheromone(int x, int y) const
 
 double World::GetHomePheromone(int x, int y) const
 {
-	if ( !InBounds(x, y))
+	if ( !IsInBounds(x, y))
 	{
 		return 0;
 	}
 
 	return m_homePheromoneMap[ToMapIndex(x, y)];
 }
-
 
 void World::Draw(bool h, bool f) const
 {
@@ -187,7 +209,7 @@ void World::Draw(bool h, bool f) const
 		DrawTexturePro(m_foodPheromoneTexture, src, dest, {0, 0}, 0, WHITE);
 	}
 
-	DrawCircleSector(GetScreenHomePos(), GetScreenHomeRadius(), 0.f, 360.f, 12, BLUE);
+	DrawCircleSector(m_screenHomePos, m_screenHomeRadius, 0.f, 360.f, 18, m_homeColor);
 }
 
 void World::Erase()
@@ -209,9 +231,9 @@ void World::Erase()
 	UnloadImageColors(m_foodPheromoneColorMap);
 	UnloadImageColors(m_worldColorMap);
 }
-void World::Reset(int width, int height, double homeEvaporationRate, double foodEvaporationRate)
+void World::Reset(int width, int height)
 {
 	Erase();
-	Init(width, height, homeEvaporationRate, foodEvaporationRate);
+	Init(width, height);
 }
 

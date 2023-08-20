@@ -10,7 +10,7 @@ class World;
 class Ant
 {
 public:
-	void Init(float startX, float startY, float startSpeed);
+	void Init(float startX, float startY);
 
 	void Update(float delta, World &world);
 
