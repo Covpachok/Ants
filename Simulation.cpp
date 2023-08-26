@@ -16,6 +16,7 @@ const int k_screenHeight = 720;
 
 constexpr float k_fixedTimestep = ( 1000.0 / 60.0 ) / 1000.0;
 
+
 Simulation::Simulation() :
 		m_ants()
 {
@@ -152,6 +153,11 @@ void Simulation::HandleInput()
 		m_pause = !m_pause;
 	}
 
+	if ( IsKeyPressed(KEY_A))
+	{
+		m_adaptiveSpeed = !m_adaptiveSpeed;
+	}
+
 	if ( IsKeyPressed(KEY_ONE))
 	{
 		m_drawHomePheromones = !m_drawHomePheromones;
@@ -277,142 +283,164 @@ void Simulation::DebugGui()
 	rlImGuiBegin();
 
 	ImGui::Begin("Ants");
-
-	ImGui::SeparatorText("Draw settings");
-
-	ImGui::Checkbox("Home", &m_drawHomePheromones);
-	ImGui::SameLine();
-	ImGui::Checkbox("Food", &m_drawFoodPheromones);
-	ImGui::SameLine();
-	ImGui::Checkbox("Ants", &m_drawAnts);
-
-	ImGui::SeparatorText("Simulation settings");
-
-	ImGui::Checkbox("Pause", &m_pause);
-	ImGui::SameLine();
-	ImGui::Checkbox("Adaptive simulation speed", &m_adaptiveSpeed);
-
-	ImGui::SliderFloat("Simulation speed", &m_gameSpeed, 0.1f, 20.f);
-
-	ImGui::SeparatorText("Other");
-
-	ImGui::Checkbox("Show simulation variables", &m_showSimulationVariables);
-
-	if ( ImGui::Button("Reset simulation"))
 	{
-		Reset();
+		ImGui::SeparatorText("Draw settings");
+
+		ImGui::Checkbox("[1] Home", &m_drawHomePheromones);
+		ImGui::SameLine();
+		ImGui::Checkbox("[2] Food", &m_drawFoodPheromones);
+		ImGui::SameLine();
+		ImGui::Checkbox("[3] Ants", &m_drawAnts);
+
+		ImGui::SeparatorText("Speed settings");
+
+		ImGui::Checkbox("[SPACE] Pause", &m_pause);
+		ImGui::SameLine();
+		ImGui::Checkbox("[A] Adaptive speed", &m_adaptiveSpeed);
+
+		ImGui::SliderFloat("Simulation speed", &m_gameSpeed, 0.1f, 20.f);
+
+		ImGui::SeparatorText("Other");
+
+		ImGui::Checkbox("Show advanced settings", &m_showSimulationVariables);
+
+		ImGui::Separator();
+
+		if ( ImGui::Button("Restart simulation"))
+		{
+			Reset();
+		}
+
+		if ( ImGui::Button("Reset settings values"))
+		{
+			g_valueTable = g_defaultValueTable;
+		}
+		ImGui::Text("(Some values will change only after simulation restart)");
 	}
-
-	if ( ImGui::Button("Reset values"))
-	{
-
-	}
-
-
 	ImGui::End();
 
-	if ( !m_showSimulationVariables )
+	if ( m_showSimulationVariables )
 	{
-		rlImGuiEnd();
-		return;
+		DebugVarsGui();
 	}
 
+	rlImGuiEnd();
+}
+
+void Simulation::DebugVarsGui()
+{
 	ImGui::Begin("Simulation variables");
-
-	auto &antsValueTable  = g_valueTable.GetMutableAntsTable();
-	auto &worldValueTable = g_valueTable.GetMutableWorldTable();
-
-
-	ImGui::SeparatorText("Realtime change");
-
-	if ( ImGui::TreeNode("Colors"))
 	{
-		ImGui::SeparatorText("Ant colors");
+		auto &antsValueTable  = g_valueTable.GetMutableAntsTable();
+		auto &worldValueTable = g_valueTable.GetMutableWorldTable();
 
-		auto imguiColor = ColorConvert::RayColorToFloat4(antsValueTable.antDefaultColor);
-		ImGui::ColorEdit4("Default", imguiColor.color);
-		antsValueTable.antDefaultColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+		ImGui::SeparatorText("REALTIME CHANGE");
 
-		imguiColor = ColorConvert::RayColorToFloat4(antsValueTable.antWithFoodColor);
-		ImGui::ColorEdit4("With food", imguiColor.color);
-		antsValueTable.antWithFoodColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+		if ( ImGui::TreeNode("Ants behaviour settings"))
+		{
+			ImGui::SeparatorText("Colors");
 
-		ImGui::SeparatorText("World colors");
+			auto imguiColor = ColorConvert::RayColorToFloat4(antsValueTable.antDefaultColor);
+			ImGui::ColorEdit4("Default", imguiColor.color);
+			antsValueTable.antDefaultColor = ColorConvert::Float4ToRayColor(imguiColor.color);
 
-		imguiColor = ColorConvert::RayColorToFloat4(worldValueTable.homePheromoneColor);
-		ImGui::ColorEdit4("Home pheromone", imguiColor.color);
-		worldValueTable.homePheromoneColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+			imguiColor = ColorConvert::RayColorToFloat4(antsValueTable.antWithFoodColor);
+			ImGui::ColorEdit4("With food", imguiColor.color);
+			antsValueTable.antWithFoodColor = ColorConvert::Float4ToRayColor(imguiColor.color);
 
-		imguiColor = ColorConvert::RayColorToFloat4(worldValueTable.foodPheromoneColor);
-		ImGui::ColorEdit4("Food pheromone", imguiColor.color);
-		worldValueTable.foodPheromoneColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+			ImGui::SeparatorText("Movement");
 
-		ImGui::TreePop();
-	}
+			ImGui::InputFloat("Movement speed", &antsValueTable.antMovementSpeed);
+			ImGui::InputFloat("Rotation speed", &antsValueTable.antRotationSpeed);
 
-	ImGui::Separator();
+			ImGui::Separator();
 
-	ImGui::SeparatorText("Will change only after a reset");
+			ImGui::InputFloat("Random angle", &antsValueTable.antRandomAngle);
 
+			ImGui::SeparatorText("Perception");
 
-	if ( ImGui::TreeNode("Ants behaviour settings"))
-	{
-		ImGui::SeparatorText("Movement");
+			ImGui::SliderInt("FOV range", &antsValueTable.antFovRange, 2, 16);
 
-		ImGui::InputFloat("Movement speed", &antsValueTable.antMovementSpeed);
-		ImGui::InputFloat("Rotation speed", &antsValueTable.antRotationSpeed);
+			ImGui::SeparatorText("Pheromones");
 
-		ImGui::Separator();
+			ImGui::InputFloat("Home strength loss", &antsValueTable.homePheromoneStrengthLoss);
+			ImGui::InputFloat("Food strength loss", &antsValueTable.foodPheromoneStrengthLoss);
 
-		ImGui::InputFloat("Random angle", &antsValueTable.antRandomAngle);
+			ImGui::Separator();
 
-		ImGui::SeparatorText("Perception");
+			ImGui::InputFloat("Home intensity", &antsValueTable.foodPheromoneIntensity);
+			ImGui::InputFloat("Food intensity", &antsValueTable.homePheromoneIntensity);
 
-		ImGui::SliderInt("FOV range", &antsValueTable.antFovRange, 2, 16);
+			ImGui::TreePop();
+		}
 
-		ImGui::SeparatorText("Pheromones");
+		ImGui::Text(" ");
 
-		ImGui::InputFloat("Home pheromone strength loss", &antsValueTable.homePheromoneStrengthLoss);
-		ImGui::InputFloat("Food pheromone strength loss", &antsValueTable.foodPheromoneStrengthLoss);
-
-		ImGui::Separator();
-
-		ImGui::InputFloat("Home pheromone intensity", &antsValueTable.foodPheromoneIntensity);
-		ImGui::InputFloat("Food pheromone intensity", &antsValueTable.homePheromoneIntensity);
-
-		ImGui::TreePop();
-	}
-
-	if ( ImGui::TreeNode("World settings"))
-	{
-		ImGui::Separator();
+		ImGui::SeparatorText("WILL CHANGE ONLY AFTER A RESET");
 
 		ImGui::InputInt("Ants amount", &worldValueTable.antsAmount);
 
-		ImGui::Separator();
-
-		ImGui::InputInt("Food amount per cell", &worldValueTable.cellDefaultAmount[1]);
-
-		ImGui::SeparatorText("Pheromones");
-
-		ImGui::InputFloat("Home pheromone evaporation rate", &worldValueTable.homePheromoneEvaporationRate);
-		ImGui::InputFloat("Food pheromone evaporation rate", &worldValueTable.foodPheromoneEvaporationRate);
-
-		ImGui::SeparatorText("Home");
-
-		ImGui::SliderInt("Radius", &worldValueTable.homeRadius, 2, 10);
-		ImGui::Checkbox("Centered position", &worldValueTable.centeredHomePos);
-		if ( !worldValueTable.centeredHomePos )
+		if ( ImGui::TreeNode("World settings"))
 		{
-			ImGui::Separator();
-			ImGui::InputInt2("Pos", worldValueTable.homePos);
-			ImGui::Checkbox("Choose by mouse click", &m_choosingHomePos);
+			ImGui::SeparatorText("World colors");
+			{
+				using namespace ColorConvert;
+
+				ImGuiRlColorEdit4("Food", worldValueTable.cellColors[World::Food]);
+				ImGuiRlColorEdit4("Wall", worldValueTable.cellColors[World::Wall]);
+
+				ImGui::Separator();
+
+				ImGuiRlColorEdit4("Home pheromone", worldValueTable.homePheromoneColor);
+				ImGuiRlColorEdit4("Food pheromone", worldValueTable.foodPheromoneColor);
+			}
+
+			ImGui::SeparatorText("Cells");
+
+			ImGui::SliderInt("Food amount per cell", &worldValueTable.cellDefaultAmount[1], 1, 512);
+
+			ImGui::SeparatorText("Pheromones");
+
+			ImGui::InputFloat("Home evaporation rate", &worldValueTable.homePheromoneEvaporationRate);
+			ImGui::InputFloat("Food evaporation rate", &worldValueTable.foodPheromoneEvaporationRate);
+
+			ImGui::SeparatorText("Home");
+
+			ImGui::SliderInt("Radius", &worldValueTable.homeRadius, 2, 10);
+			ImGui::Checkbox("Centered position", &worldValueTable.centeredHomePos);
+			if ( !worldValueTable.centeredHomePos )
+			{
+				ImGui::Separator();
+				ImGui::InputInt2("Pos", worldValueTable.homePos);
+				ImGui::Checkbox("Choose by mouse click", &m_choosingHomePos);
+			}
+
+			ImGui::TreePop();
 		}
 
-		ImGui::TreePop();
+		ImGui::Text(" ");
+
+		ImGui::Checkbox("Generate map", &worldValueTable.shouldGenerateMap);
+
+		if ( ImGui::TreeNode("Map generation settings"))
+		{
+			ImGui::SeparatorText("Noise gen");
+
+			ImGui::SliderFloat("Scale", &worldValueTable.mapGenNoiseScale, 1.f, 128.f);
+			ImGui::SliderInt("Blur", &worldValueTable.mapGenNoiseBlur, 0, 32);
+
+			ImGui::SeparatorText("Cells thresholds");
+
+			ImGui::SliderInt("Food low", &worldValueTable.mapGenFoodLowThreshold, 0, 255);
+			ImGui::SliderInt("Food high", &worldValueTable.mapGenFoodHighThreshold, 0, 255);
+
+			ImGui::Separator();
+
+			ImGui::SliderInt("Wall low", &worldValueTable.mapGenWallLowThreshold, 0, 255);
+			ImGui::SliderInt("Wall high", &worldValueTable.mapGenWallHighThreshold, 0, 255);
+
+			ImGui::TreePop();
+		}
 	}
-
 	ImGui::End();
-
-	rlImGuiEnd();
 }

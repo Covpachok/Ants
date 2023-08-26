@@ -24,9 +24,12 @@ void Ant::Init(float startX, float startY)
 	m_prevPos      = m_pos;
 	m_angle        = static_cast<float>(GetRandomValue(M_PI * -100, M_PI * 100)) / 100.f;
 	m_desiredAngle = m_angle;
+
+	m_colorsPtr[0] = &m_table->antDefaultColor;
+	m_colorsPtr[1] = &m_table->antWithFoodColor;
 }
 
-void Ant::Update(float delta, const World &world)
+void Ant::Update(const float delta, const World &world)
 {
 	m_lastPheromoneSpawnTime += delta;
 	m_lastPheromoneCheckTime += delta;
@@ -45,7 +48,7 @@ void Ant::Update(float delta, const World &world)
 	Move(delta);
 }
 
-void Ant::PostUpdate(float delta, World &world)
+void Ant::PostUpdate(const float delta, World &world)
 {
 	if ( m_lastPheromoneSpawnTime > m_table->pheromoneSpawnDelay )
 	{
@@ -122,10 +125,10 @@ void Ant::CheckCollisions(const World &world)
 
 	if ( CheckPointCircleCollision(m_pos, homePos, homeRadius))
 	{
+		m_homeStrength = 1;
 		if ( m_gotFood )
 		{
-			m_homeStrength = 1;
-			m_gotFood      = false;
+			m_gotFood = false;
 			TurnBackward();
 			return;
 		}
@@ -140,9 +143,10 @@ void Ant::CheckCollisions(const World &world)
 
 		TurnBackward();
 
+		m_foodStrength = 1;
+
 		if ( !m_gotFood )
 		{
-			m_foodStrength = 1;
 
 			m_shouldDecreaseCell = true;
 			m_cellToDecreasePos  = checkMapPos;
@@ -233,16 +237,16 @@ void Ant::CheckPheromones(const World &world)
 				foundThing = true;
 				break;
 			}
+
+			if ( m_gotFood )
+			{
+				checkedPheromone = world.GetHomePheromone(checkMapPos.first, checkMapPos.second);
+			}
 			else if ( cellType == World::Food )
 			{
 				turnSide   = side;
 				foundThing = true;
 				break;
-			}
-
-			if ( m_gotFood )
-			{
-				checkedPheromone = world.GetHomePheromone(checkMapPos.first, checkMapPos.second);
 			}
 			else
 			{
@@ -279,7 +283,7 @@ void Ant::ChangeDesiredAngle(Vector2 desiredPos)
 void Ant::Draw()
 {
 //	DrawCircle(m_pos.x, m_pos.y, 2, m_gotFood ? k_antWithFoodColor : k_antColor);
-	DrawCircleSector(m_pos, 2, 0, 360, 1, *m_table->antColorPtr[m_gotFood]);
+	DrawCircleSector(m_pos, 2, 0, 360, 1, *m_colorsPtr[m_gotFood]);
 //	auto forward  = Vector2Rotate({10, 0}, m_angle);
 //	auto dforward = Vector2Rotate({10, 0}, m_desiredAngle);
 //	DrawLineV(m_pos, Vector2Add(m_pos, forward), BLUE);
@@ -325,10 +329,10 @@ void Ant::StayOnScreen()
 void Ant::RandomizeAngle(float pi)
 {
 	// TODO: Replace GetRandomValue to c++ random functions
-	m_angle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.0;
+	m_angle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.f;
 }
 
 void Ant::RandomizeDesiredAngle(float pi)
 {
-	m_desiredAngle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.0;
+	m_desiredAngle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.f;
 }

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <utility>
 
+#include <vector>
 
 #include "raylib.h"
 #include "rlgl.h"
@@ -80,6 +81,8 @@ public:
 	void Reset(int width, int height);
 	void Erase();
 
+	void GenerateMap();
+
 private:
 	inline int ToMapIndex(int x, int y) const { return ( y * m_width ) + x; }
 
@@ -127,6 +130,8 @@ private:
 	Color m_homeColor;
 	Color m_cellColors[k_cellsAmount];
 	int   m_cellDefaultAmount[k_cellsAmount];
+
+	std::vector<std::pair<int, int>> m_homeCellPositions;
 };
 
 

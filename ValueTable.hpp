@@ -26,11 +26,10 @@ struct AntsValueTable
 	float pheromoneSpawnDelay = 0.25f;
 
 	// VERY IMPORTANT VALUE 0.05
-	const float antPheromoneCheckDelay = 0.05f; // DO NOT CHANGE
+	float antPheromoneCheckDelay = 0.05f; // DO NOT CHANGE
 
 	Color antDefaultColor  = {128, 128, 255, 128};
 	Color antWithFoodColor = {128, 255, 128, 128};
-	Color *antColorPtr[2]  = {&antDefaultColor, &antWithFoodColor};
 };
 
 struct WorldValueTable
@@ -51,9 +50,19 @@ struct WorldValueTable
 	int homeRadius = 5;
 
 	bool centeredHomePos = true;
-	int homePos[2] = {0, 0};
+	int  homePos[2]      = {0, 0};
 
 	int antsAmount = 1000;
+
+	bool  shouldGenerateMap = true;
+	float mapGenNoiseScale  = 8.f;
+	int   mapGenNoiseBlur   = 2;
+
+	int mapGenFoodLowThreshold  = 0;
+	int mapGenFoodHighThreshold = 64;
+
+	int mapGenWallLowThreshold  = 160;
+	int mapGenWallHighThreshold = 255;
 };
 
 class ValueTable
@@ -65,12 +74,15 @@ public:
 	AntsValueTable &GetMutableAntsTable() { return m_antsTable; }
 	WorldValueTable &GetMutableWorldTable() { return m_worldTable; }
 
+	ValueTable &operator=(ValueTable &&other) = default;
+	ValueTable &operator=(const ValueTable &other) = default;
+
 private:
 	AntsValueTable  m_antsTable;
 	WorldValueTable m_worldTable;
 };
 
-inline ValueTable g_valueTable;
-inline ValueTable g_defaultValueTable;
+inline ValueTable       g_valueTable;
+inline const ValueTable g_defaultValueTable;
 
 #endif //ANTS_VALUETABLE_HPP

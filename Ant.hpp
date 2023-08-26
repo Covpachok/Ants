@@ -57,18 +57,20 @@ private:
 
 	const AntsValueTable *m_table;
 
+	const Color *m_colorsPtr[2];
+
 	float m_angle;
 	float m_desiredAngle;
 
 	float m_homeStrength = 1;
 	float m_foodStrength = 0;
 
-	bool m_gotFood = false;
-
 	float m_lastPheromoneSpawnTime = 0;
 	float m_lastPheromoneCheckTime = 0;
 
-	bool                m_shouldDecreaseCell = false;
+	bool m_gotFood            = false;
+	bool m_shouldDecreaseCell = false;
+
 	std::pair<int, int> m_cellToDecreasePos;
 };
 

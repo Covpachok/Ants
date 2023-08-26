@@ -34,6 +34,15 @@ namespace ColorConvert
 	{
 		return ImGuiColor{UcharToFloat(value.r), UcharToFloat(value.g), UcharToFloat(value.b), UcharToFloat(value.a)};
 	}
+
+	bool ImGuiRlColorEdit4(const char *label, Color &col, ImGuiColorEditFlags flags = 0)
+	{
+		auto converted = ColorConvert::RayColorToFloat4(col);
+		bool ret       = ImGui::ColorEdit4(label, converted.color, flags);
+		col = ColorConvert::Float4ToRayColor(converted.color);
+
+		return ret;
+	}
 }
 
 

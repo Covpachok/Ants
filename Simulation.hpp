@@ -25,6 +25,7 @@ private:
 	void Reset();
 
 	void DebugGui();
+	void DebugVarsGui();
 
 private:
 	std::vector<Ant> m_ants;
