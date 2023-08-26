@@ -81,10 +81,19 @@ public:
 	void Reset(int width, int height);
 	void Erase();
 
-	void GenerateMap();
+	inline void IncDeliveredFoodCount() { ++m_deliveredFoodAmount; }
+
+	int GetCollectedFoodAmount() const { return m_collectedFoodAmount; }
+	int GetDeliveredFoodAmount() const { return m_deliveredFoodAmount; }
+
+	int GetTotalFoodAmount() const { return m_totalFoodAmount; }
+	int GetRemainingFoodAmount() const { return m_remaingingFoodAmount; }
 
 private:
 	inline int ToMapIndex(int x, int y) const { return ( y * m_width ) + x; }
+
+	void GenerateMap();
+
 
 private:
 	const WorldValueTable *m_valueTable;
@@ -130,6 +139,12 @@ private:
 	Color m_homeColor;
 	Color m_cellColors[k_cellsAmount];
 	int   m_cellDefaultAmount[k_cellsAmount];
+
+	int m_collectedFoodAmount = 0;
+	int m_deliveredFoodAmount = 0;
+
+	int m_totalFoodAmount      = 0;
+	int m_remaingingFoodAmount = 0;
 
 	std::vector<std::pair<int, int>> m_homeCellPositions;
 };

@@ -98,10 +98,12 @@ void World::Init(int width, int height)
 		}
 	}
 
-	if ( m_valueTable->shouldGenerateMap )
-	{
-		GenerateMap();
-	}
+	m_collectedFoodAmount  = 0;
+	m_deliveredFoodAmount  = 0;
+	m_remaingingFoodAmount = 0;
+	m_totalFoodAmount      = 0;
+
+	GenerateMap();
 }
 
 World::~World()
@@ -113,8 +115,9 @@ void World::Update(double delta)
 {
 	for ( auto &pos: m_homeCellPositions )
 	{
-		m_homePheromoneMap[pos.second][pos.first] = 1000;
+		m_homePheromoneMap[pos.second][pos.first] = 9998;
 	}
+
 #if 0
 	for ( int y = -m_homeRadius; y < m_homeRadius; ++y )
 	{
@@ -165,6 +168,7 @@ void World::SetCell(int x, int y, CellType type)
 		return;
 	}
 
+	auto prevCell = m_worldMap[y][x];
 	m_worldMap[y][x].type   = type;
 	m_worldMap[y][x].amount = m_cellDefaultAmount[type];
 
@@ -172,6 +176,20 @@ void World::SetCell(int x, int y, CellType type)
 	m_worldColorMap[mapIndex] = m_cellColors[type];
 	m_homePheromoneMap[y][x]  = 0;
 	m_foodPheromoneMap[y][x]  = 0;
+
+	if ( type == Food )
+	{
+		if ( prevCell.type == Food )
+		{
+			m_totalFoodAmount += m_cellDefaultAmount[Food] - prevCell.amount;
+			m_remaingingFoodAmount += m_cellDefaultAmount[Food] - prevCell.amount;
+		}
+		else
+		{
+			m_totalFoodAmount += m_cellDefaultAmount[Food];
+			m_remaingingFoodAmount += m_cellDefaultAmount[Food];
+		}
+	}
 
 //	UpdateTexture(m_worldTexture, m_worldColorMap);
 	UpdateTextureRec(m_worldTexture, {static_cast<float>(x), static_cast<float>(y), 1, 1}, &m_cellColors[type]);
@@ -186,6 +204,12 @@ void World::DecreaseCell(int x, int y)
 
 	--m_worldMap[y][x].amount;
 
+	if ( m_worldMap[y][x].type == Food && m_worldMap[y][x].amount >= 0 )
+	{
+		--m_remaingingFoodAmount;
+		++m_collectedFoodAmount;
+	}
+
 	if ( m_worldMap[y][x].amount <= 0 )
 	{
 		SetCell(x, y, None);
@@ -194,22 +218,21 @@ void World::DecreaseCell(int x, int y)
 
 void World::AddHomePheromone(int x, int y, double intensity)
 {
-	if ( !IsInBounds(x, y))
+	if ( !IsInBounds(x, y) || m_worldMap[y][x].type != None )
 	{
 		return;
 	}
-
-	m_homePheromoneMap[y][x] = std::min(m_homePheromoneMap[y][x] + intensity, 255.0);
+	m_homePheromoneMap[y][x] = std::min(m_homePheromoneMap[y][x] + intensity, 512.0);
 }
 
 void World::AddFoodPheromone(int x, int y, double intensity)
 {
-	if ( !IsInBounds(x, y))
+	if ( !IsInBounds(x, y) || m_worldMap[y][x].type != None )
 	{
 		return;
 	}
 
-	m_foodPheromoneMap[y][x] = std::min(m_foodPheromoneMap[y][x] + intensity, 255.0);
+	m_foodPheromoneMap[y][x] = std::min(m_foodPheromoneMap[y][x] + intensity, 512.0);
 }
 
 
@@ -233,8 +256,6 @@ void World::Draw(bool h, bool f) const
 void World::Erase()
 {
 	m_homeCellPositions.clear();
-	std::cout << m_homeCellPositions.size() << std::endl;
-
 
 	for ( int y = 0; y < m_height; ++y )
 	{
@@ -268,6 +289,47 @@ void World::Reset(int width, int height)
 
 void World::GenerateMap()
 {
+	std::function<void(int, int, Color)> genFunc;
+
+	auto foodOnly = [&](int x, int y, Color pixel) {
+		if ( pixel.r >= m_valueTable->mapGenFoodLowThreshold &&
+		     pixel.r <= m_valueTable->mapGenFoodHighThreshold )
+		{
+			SetCell(x, y, Food);
+		}
+	};
+
+	auto wallsOnly = [&](int x, int y, Color pixel) {
+		if ( pixel.r >= m_valueTable->mapGenWallLowThreshold &&
+		     pixel.r <= m_valueTable->mapGenWallHighThreshold )
+		{
+			SetCell(x, y, Wall);
+		}
+	};
+
+	auto foodAndWalls = [&](int x, int y, Color pixel) {
+		foodOnly(x, y, pixel);
+		wallsOnly(x, y, pixel);
+	};
+
+	switch ( m_valueTable->mapGenSettings )
+	{
+		case MapGenSettings::FoodOnly:
+			genFunc = foodOnly;
+			break;
+
+		case MapGenSettings::WallsOnly:
+			genFunc = wallsOnly;
+			break;
+
+		case MapGenSettings::FoodAndWalls:
+			genFunc = foodAndWalls;
+			break;
+
+		default:
+			return;
+	}
+
 	Image noiseImage = GenImagePerlinNoise(m_width, m_height, GetRandomValue(-1000, 1000),
 	                                       GetRandomValue(-1000, 1000), m_valueTable->mapGenNoiseScale);
 	ImageBlurGaussian(&noiseImage, m_valueTable->mapGenNoiseBlur);
@@ -289,17 +351,7 @@ void World::GenerateMap()
 			const int   index      = rowIndex + x;
 			const Color noisePixel = noiseColors[index];
 
-			if ( noisePixel.r >= m_valueTable->mapGenFoodLowThreshold &&
-			     noisePixel.r <= m_valueTable->mapGenFoodHighThreshold )
-			{
-				SetCell(x, y, Food);
-			}
-
-			if ( noisePixel.r >= m_valueTable->mapGenWallLowThreshold &&
-			     noisePixel.r <= m_valueTable->mapGenWallHighThreshold )
-			{
-				SetCell(x, y, Wall);
-			}
+			genFunc(x, y, noisePixel);
 		}
 	}
 

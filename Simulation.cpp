@@ -284,6 +284,25 @@ void Simulation::DebugGui()
 
 	ImGui::Begin("Ants");
 	{
+		if ( ImGui::CollapsingHeader("Statistics"))
+		{
+			ImGui::Value("Collected food ", m_world.GetCollectedFoodAmount());
+			ImGui::Value("Delivered food ", m_world.GetDeliveredFoodAmount());
+			ImGui::Value("Not delivered  ", m_world.GetCollectedFoodAmount() - m_world.GetDeliveredFoodAmount());
+
+			ImGui::Separator();
+
+			ImGui::Value("Remaining food ", m_world.GetRemainingFoodAmount());
+			ImGui::Value("Total food     ", m_world.GetTotalFoodAmount());
+
+			ImGui::Separator();
+
+			ImGui::Text("Delivered/Total : %d/%d", m_world.GetDeliveredFoodAmount(), m_world.GetTotalFoodAmount());
+		}
+
+		ImGui::Separator();
+
+
 		ImGui::SeparatorText("Draw settings");
 
 		ImGui::Checkbox("[1] Home", &m_drawHomePheromones);
@@ -420,10 +439,15 @@ void Simulation::DebugVarsGui()
 
 		ImGui::Text(" ");
 
-		ImGui::Checkbox("Generate map", &worldValueTable.shouldGenerateMap);
-
 		if ( ImGui::TreeNode("Map generation settings"))
 		{
+			ImGui::SeparatorText("Generation");
+
+			const char *titles[] = {"None", "Food only", "Walls only", "Food and Walls"};
+
+			ImGui::Combo("Cells to generate", reinterpret_cast<int *>(&worldValueTable.mapGenSettings),
+			             titles, static_cast<int>(MapGenSettings::Amount));
+
 			ImGui::SeparatorText("Noise gen");
 
 			ImGui::SliderFloat("Scale", &worldValueTable.mapGenNoiseScale, 1.f, 128.f);

@@ -45,7 +45,7 @@ private:
 
 	void StayOnScreen();
 
-	void CheckPheromones(const World &world);
+	void CheckInFov(const World &world);
 
 	void RandomizeAngle(float pi = M_PI);
 
@@ -70,6 +70,7 @@ private:
 
 	bool m_gotFood            = false;
 	bool m_shouldDecreaseCell = false;
+	bool m_deliveredFood = false;
 
 	std::pair<int, int> m_cellToDecreasePos;
 };

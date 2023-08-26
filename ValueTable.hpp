@@ -9,6 +9,8 @@
 
 constexpr int k_cellsAmount = 3;
 
+enum class MapGenSettings { None, FoodOnly, WallsOnly, FoodAndWalls, Amount };
+
 struct AntsValueTable
 {
 	float antMovementSpeed = 40;
@@ -24,9 +26,6 @@ struct AntsValueTable
 	float homePheromoneIntensity = 128;
 
 	float pheromoneSpawnDelay = 0.25f;
-
-	// VERY IMPORTANT VALUE 0.05
-	float antPheromoneCheckDelay = 0.05f; // DO NOT CHANGE
 
 	Color antDefaultColor  = {128, 128, 255, 128};
 	Color antWithFoodColor = {128, 255, 128, 128};
@@ -54,9 +53,11 @@ struct WorldValueTable
 
 	int antsAmount = 1000;
 
-	bool  shouldGenerateMap = true;
+//	bool  shouldGenerateMap = true;
 	float mapGenNoiseScale  = 8.f;
 	int   mapGenNoiseBlur   = 2;
+
+	MapGenSettings mapGenSettings = MapGenSettings::FoodAndWalls;
 
 	int mapGenFoodLowThreshold  = 0;
 	int mapGenFoodHighThreshold = 64;

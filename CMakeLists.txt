@@ -14,13 +14,13 @@ set(IMGUI_SOURCES
         ${IMGUI_FOLDER}/imgui_widgets.cpp
         ${IMGUI_FOLDER}/imgui_tables.cpp
         libs/rlImGui/rlImGui.cpp
-        ValueTable.hpp ColorConvert.hpp)
+        )
 
 add_subdirectory(libs/raylib)
 include_directories(${IMGUI_FOLDER})
 include_directories(libs/rlImGui)
 
-add_executable(${PROJECT_NAME} main.cpp ${IMGUI_SOURCES} Ant.cpp Ant.hpp World.cpp World.hpp Simulation.cpp Simulation.hpp)
+add_executable(${PROJECT_NAME} main.cpp ${IMGUI_SOURCES} Ant.cpp Ant.hpp World.cpp World.hpp Simulation.cpp Simulation.hpp ValueTable.hpp ColorConvert.hpp)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib -static gcc stdc++ winpthread -dynamic ${OpenMP_CXX_FLAGS})

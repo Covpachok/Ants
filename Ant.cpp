@@ -6,6 +6,8 @@
 
 #include "omp.h"
 
+constexpr float k_antPheromoneCheckDelay = 0.05f;
+
 bool CheckPointCircleCollision(Vector2 center1, Vector2 center2, float radius2)
 {
 	const float dx = center2.x - center1.x;
@@ -35,9 +37,9 @@ void Ant::Update(const float delta, const World &world)
 	m_lastPheromoneCheckTime += delta;
 
 	CheckCollisions(world);
-	if ( m_lastPheromoneCheckTime > m_table->antPheromoneCheckDelay )
+	if ( m_lastPheromoneCheckTime > k_antPheromoneCheckDelay )
 	{
-		CheckPheromones(world);
+		CheckInFov(world);
 		m_lastPheromoneCheckTime = 0;
 	}
 
@@ -58,8 +60,19 @@ void Ant::PostUpdate(const float delta, World &world)
 
 	if ( m_shouldDecreaseCell )
 	{
+		if ( world.GetCell(m_cellToDecreasePos.first, m_cellToDecreasePos.second).type == World::Food )
+		{
+			m_gotFood = true;
+		}
+
 		m_shouldDecreaseCell = false;
 		world.DecreaseCell(m_cellToDecreasePos.first, m_cellToDecreasePos.second);
+	}
+
+	if ( m_deliveredFood )
+	{
+		m_deliveredFood = false;
+		world.IncDeliveredFoodCount();
 	}
 }
 
@@ -128,7 +141,8 @@ void Ant::CheckCollisions(const World &world)
 		m_homeStrength = 1;
 		if ( m_gotFood )
 		{
-			m_gotFood = false;
+			m_deliveredFood = true;
+			m_gotFood       = false;
 			TurnBackward();
 			return;
 		}
@@ -147,11 +161,8 @@ void Ant::CheckCollisions(const World &world)
 
 		if ( !m_gotFood )
 		{
-
 			m_shouldDecreaseCell = true;
 			m_cellToDecreasePos  = checkMapPos;
-
-			m_gotFood = true;
 		}
 	}
 
@@ -160,11 +171,11 @@ void Ant::CheckCollisions(const World &world)
 	{
 		m_pos = m_prevPos;
 
-		RandomizeAngle(M_PI_2);
+		RandomizeAngle(M_PI);
 	}
 }
 
-void Ant::CheckPheromones(const World &world)
+void Ant::CheckInFov(const World &world)
 {
 	float     checkAngles[3][2];
 	for ( int i = -1; i <= 1; ++i )
@@ -231,7 +242,7 @@ void Ant::CheckPheromones(const World &world)
 			const auto checkMapPos = world.ScreenToWorld(checkPos.x, checkPos.y);
 			cellType = world.GetCell(checkMapPos.first, checkMapPos.second).type;
 
-			if ( cellType == World::Wall && j < 2 )
+			if ( cellType == World::Wall && j < 3 )
 			{
 				turnSide   = -side;
 				foundThing = true;
