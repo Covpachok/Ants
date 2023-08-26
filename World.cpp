@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <iostream>
+
 #include "World.hpp"
 
 #include "omp.h"
@@ -91,7 +91,7 @@ World::~World()
 
 void World::Update(double delta)
 {
-	for ( int y     = -m_homeRadius; y < m_homeRadius; ++y )
+	for ( int y = -m_homeRadius; y < m_homeRadius; ++y )
 	{
 		for ( int x = -m_homeRadius; x < m_homeRadius; ++x )
 		{
@@ -102,18 +102,28 @@ void World::Update(double delta)
 		}
 	}
 
-	#pragma omp parallel for default(none) shared(delta)
-	for (int y = 0; y < m_height; ++y )
+	const double homeEvapRate = m_homePheromoneEvaporationRate * delta;
+	const double foodEvapRate = m_foodPheromoneEvaporationRate * delta;
+
+#pragma omp parallel for default(none) shared(delta, homeEvapRate, foodEvapRate)
+	for ( int y = 0; y < m_height; ++y )
 	{
-		for (int x = 0; x < m_width; ++x )
+		double *homePheromoneRow = m_homePheromoneMap[y];
+		double *foodPheromoneRow = m_foodPheromoneMap[y];
+
+		const int rowIndex = y * m_width;
+
+		for ( int x = 0; x < m_width; ++x )
 		{
-			int index = ToMapIndex(x, y);
-			m_homePheromoneMap[y][x] = std::max(m_homePheromoneMap[y][x] - ( m_homePheromoneEvaporationRate * delta ),
-			                                    0.0);
-			m_foodPheromoneMap[y][x] = std::max(m_foodPheromoneMap[y][x] - ( m_foodPheromoneEvaporationRate * delta ),
-			                                    0.0);
-			m_homePheromoneColorMap[index].a = (unsigned char) std::min(m_homePheromoneMap[y][x], 255.0);
-			m_foodPheromoneColorMap[index].a = (unsigned char) std::min(m_foodPheromoneMap[y][x], 255.0);
+			double &homePheromone = homePheromoneRow[x];
+			double &foodPheromone = foodPheromoneRow[x];
+
+			homePheromone = std::max(homePheromone - homeEvapRate, 0.0);
+			foodPheromone = std::max(foodPheromone - foodEvapRate, 0.0);
+
+			const int index = rowIndex + x;
+			m_homePheromoneColorMap[index].a = static_cast<unsigned char>(std::min(homePheromone, 255.0));
+			m_foodPheromoneColorMap[index].a = static_cast<unsigned char>(std::min(foodPheromone, 255.0));
 		}
 	}
 
@@ -137,7 +147,8 @@ void World::SetCell(int x, int y, CellType type)
 	m_homePheromoneMap[y][x]  = 0;
 	m_foodPheromoneMap[y][x]  = 0;
 
-	UpdateTexture(m_worldTexture, m_worldColorMap);
+//	UpdateTexture(m_worldTexture, m_worldColorMap);
+	UpdateTextureRec(m_worldTexture, {static_cast<float>(x), static_cast<float>(y), 1, 1}, &m_cellColors[type]);
 }
 
 void World::DecreaseCell(int x, int y)

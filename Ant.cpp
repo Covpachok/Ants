@@ -6,11 +6,15 @@
 
 #include "omp.h"
 
-//const float k_antRotationSpeed    = 12; // 12
-//const float k_antRandomAngle      = 0.3; // 0.3
-//const float k_antFoodStrengthLoss = 0.025; // 0.02
-//const float k_antHomeStrengthLoss = 0.025; // 0.02
-//const int   k_antFovRange         = 8;
+bool CheckPointCircleCollision(Vector2 center1, Vector2 center2, float radius2)
+{
+	const float dx = center2.x - center1.x;
+	const float dy = center2.y - center1.y;
+
+	const float distanceSquared = dx * dx + dy * dy;
+
+	return distanceSquared <= radius2 * radius2;
+}
 
 void Ant::Init(float startX, float startY)
 {
@@ -60,7 +64,7 @@ void Ant::Move(float delta)
 {
 	m_prevPos = m_pos;
 
-	auto speed = m_table->antMovementSpeed * delta;
+	const float speed = m_table->antMovementSpeed * delta;
 
 	m_pos.x += speed * std::cos(m_angle);
 	m_pos.y += speed * std::sin(m_angle);
@@ -70,17 +74,16 @@ void Ant::Move(float delta)
 
 void Ant::Rotate(float delta)
 {
-	static std::random_device               rd;
-	static std::mt19937                     gen(rd());
-	static std::uniform_real_distribution<> dis(-1.0, 1.0);
+	static std::random_device                    rd;
+	static std::mt19937                          gen(rd());
+	static std::uniform_real_distribution<float> dis(-1.f, 1.f);
 
-	int deviation = ( GetRandomValue(0, 100) <= 1 );
+	const float deviation   = ( GetRandomValue(0, 100) <= 1 ) ? dis(gen) : 0.0;
+	const float randomAngle = dis(gen) * m_table->antRandomAngle;
 
-	float randomAngle = dis(gen) * m_table->antRandomAngle + deviation * dis(gen);
+	m_desiredAngle += randomAngle + deviation;
 
-	m_desiredAngle += randomAngle;
-
-	float angleDiff = m_desiredAngle - m_angle;
+	/*
 	if ( angleDiff > M_PI )
 	{
 		angleDiff -= 2 * M_PI;
@@ -89,6 +92,11 @@ void Ant::Rotate(float delta)
 	{
 		angleDiff += 2 * M_PI;
 	}
+	 */
+
+	float angleDiff = m_desiredAngle - m_angle;
+	angleDiff = std::remainder(angleDiff, 2.0f * static_cast<float>(M_PI));
+
 	m_angle += angleDiff * m_table->antRotationSpeed * delta;
 }
 
@@ -108,10 +116,11 @@ void Ant::SpawnPheromone(World &world)
 
 void Ant::CheckCollisions(const World &world)
 {
+	/* Home collision */
 	const auto  homePos    = world.GetScreenHomePos();
 	const float homeRadius = world.GetScreenHomeRadius();
 
-	if ( CheckCollisionPointCircle(m_pos, homePos, homeRadius))
+	if ( CheckPointCircleCollision(m_pos, homePos, homeRadius))
 	{
 		if ( m_gotFood )
 		{
@@ -122,6 +131,7 @@ void Ant::CheckCollisions(const World &world)
 		}
 	}
 
+	/* Food collision */
 	const auto checkMapPos = world.ScreenToWorld(m_pos.x, m_pos.y);
 	auto       cellType    = world.GetCell(checkMapPos.first, checkMapPos.second).type;
 	if ( cellType == World::Food )
@@ -138,28 +148,38 @@ void Ant::CheckCollisions(const World &world)
 			m_cellToDecreasePos  = checkMapPos;
 
 			m_gotFood = true;
-//			TurnBackward();
 		}
 	}
 
+	/* Wall collision */
 	if ( cellType == World::Wall )
 	{
 		m_pos = m_prevPos;
 
 		RandomizeAngle(M_PI_2);
-
-//		CheckPheromones(world);
 	}
 }
 
 void Ant::CheckPheromones(const World &world)
 {
-	Vector2 checkPos;
-
-	double strongestPheromone = 0;
-	double checkedPheromone;
-
 	float     checkAngles[3][2];
+	for ( int i = -1; i <= 1; ++i )
+	{
+		const float angleX = m_angle + static_cast<float>(i) * M_PI_4;
+
+		float cosValue = std::cos(angleX);
+		float sinValue = std::sin(angleX);
+
+		if ( angleX > M_PI )
+		{
+			cosValue = -cosValue;
+			sinValue = -sinValue;
+		}
+
+		checkAngles[i + 1][0] = cosValue;
+		checkAngles[i + 1][1] = sinValue;
+	}
+#if 0
 	for ( int i = -1; i <= 1; ++i )
 	{
 		float &checkAngleX = checkAngles[i + 1][0];
@@ -177,12 +197,18 @@ void Ant::CheckPheromones(const World &world)
 		checkAngleY = std::sin(checkAngleX);
 		checkAngleX = std::cos(checkAngleX);
 	}
+#endif
+
+	Vector2 checkPos = {0, 0};
+
+	double strongestPheromone = 0;
+	double checkedPheromone   = 0;
 
 	bool foundThing = false;
 	int  prevSide   = 0;
 	int  turnSide   = 0;
 
-	World::CellType cellType;
+	World::CellType cellType = World::None;
 
 	float screenToMapRatio = world.GetScreenToWorldRatio();
 
@@ -207,18 +233,16 @@ void Ant::CheckPheromones(const World &world)
 				foundThing = true;
 				break;
 			}
+			else if ( cellType == World::Food )
+			{
+				turnSide   = side;
+				foundThing = true;
+				break;
+			}
 
-//				if ( m_gotFood || m_homeStrength < 0.1 )
 			if ( m_gotFood )
 			{
 				checkedPheromone = world.GetHomePheromone(checkMapPos.first, checkMapPos.second);
-			}
-			else if ( cellType == World::Food )
-			{
-				checkedPheromone = 9999;
-				turnSide         = side;
-				foundThing       = true;
-				break;
 			}
 			else
 			{
@@ -239,12 +263,10 @@ void Ant::CheckPheromones(const World &world)
 		}
 	}
 
-	if ( strongestPheromone <= 0.01 )
+	if ( strongestPheromone > 0.01 || foundThing )
 	{
-		return;
+		m_desiredAngle = m_angle + turnSide * M_PI_4;
 	}
-
-	m_desiredAngle = m_angle + turnSide * M_PI_4;
 }
 
 void Ant::ChangeDesiredAngle(Vector2 desiredPos)
@@ -266,8 +288,8 @@ void Ant::Draw()
 
 void Ant::StayOnScreen()
 {
-	const float width  = (float) GetScreenWidth();
-	const float height = (float) GetScreenHeight();
+	const auto width  = static_cast<float>(GetScreenWidth());
+	const auto height = static_cast<float>(GetScreenHeight());
 
 	bool out = false;
 
@@ -298,38 +320,11 @@ void Ant::StayOnScreen()
 		m_pos = m_prevPos;
 		TurnBackward();
 	}
-
-#if 0
-	const int offset       = 3;
-	const int doubleOffset = offset * 2;
-
-	if ( m_pos.x >= GetScreenWidth() - doubleOffset || m_pos.y >= GetScreenHeight() - doubleOffset ||
-		 m_pos.x < doubleOffset || m_pos.y < doubleOffset )
-	{
-		TurnBackward();
-	}
-
-	if ( m_pos.x >= GetScreenWidth() - offset )
-	{
-		m_pos.x = GetScreenWidth() - offset;
-	}
-	if ( m_pos.y >= GetScreenHeight() - offset )
-	{
-		m_pos.y = GetScreenHeight() - offset;
-	}
-	if ( m_pos.x < offset )
-	{
-		m_pos.x = offset;
-	}
-	if ( m_pos.y < offset )
-	{
-		m_pos.y = offset;
-	}
-#endif
 }
 
 void Ant::RandomizeAngle(float pi)
 {
+	// TODO: Replace GetRandomValue to c++ random functions
 	m_angle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.0;
 }
 

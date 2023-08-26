@@ -14,24 +14,7 @@
 const int k_screenWidth  = 1280;
 const int k_screenHeight = 720;
 
-/*
-const float k_foodPheromoneIntensity = 10;
-const float k_homePheromoneIntensity = 10;
-
-const float k_foodPheromoneEvaporationRate = 2;
-const float k_homePheromoneEvaporationRate = 2;
- */
-
-const float k_foodPheromoneIntensity = 800;
-const float k_homePheromoneIntensity = 800;
-
-const float k_foodPheromoneEvaporationRate = 1;
-const float k_homePheromoneEvaporationRate = 1;
-
-const double k_fixedTimestep = ( 1000.0 / 60.0 ) / 1000.0;
-
-//const int k_antsAmount = 2000;
-//const int k_antsAmount = 2000;
+constexpr float k_fixedTimestep = ( 1000.0 / 60.0 ) / 1000.0;
 
 Simulation::Simulation() :
 		m_ants()
@@ -60,19 +43,19 @@ Simulation::~Simulation()
 
 void Simulation::Start()
 {
-	double deltaTime = 0;
+	float delta = 0;
 	while ( !WindowShouldClose())
 	{
 		Draw();
 		HandleInput();
 		if ( !m_pause )
 		{
-			deltaTime += GetFrameTime() * m_gameSpeed;
+			delta += GetFrameTime() * m_gameSpeed;
 
-			while ( deltaTime >= k_fixedTimestep )
+			while ( delta >= k_fixedTimestep )
 			{
-				deltaTime -= k_fixedTimestep;
-				Update(k_fixedTimestep);
+				delta -= k_fixedTimestep;
+				Update();
 			}
 		}
 	}
@@ -110,7 +93,7 @@ void Simulation::HandleInput()
 		m_camera.offset = GetMousePosition();
 		m_camera.target = mouseWorldPos;
 		m_camera.zoom += wheel * 0.1f;
-		m_camera.zoom   = std::max(m_camera.zoom, 0.1f);
+		m_camera.zoom   = std::fmax(m_camera.zoom, 0.1f);
 	}
 
 	if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
@@ -121,13 +104,16 @@ void Simulation::HandleInput()
 
 	if ( IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
 	{
-		auto      pos    = m_world.ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
-		int       radius = 5;
-		for ( int y      = -radius; y <= radius; ++y )
+		auto pos = m_world.ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
+
+		int       radius        = 5;
+		const int radiusSquared = radius * radius;
+
+		for ( int y = -radius; y <= radius; ++y )
 		{
 			for ( int x = -radius; x <= radius; ++x )
 			{
-				if ( x * x + y * y <= radius * radius + 0.5f )
+				if ( x * x + y * y <= radiusSquared )
 				{
 					m_world.SetCell(pos.first + x, pos.second + y, World::Food);
 				}
@@ -198,7 +184,7 @@ void Simulation::HandleInput()
 	}
 }
 
-void Simulation::Update(double delta)
+void Simulation::Update()
 {
 	SetWindowTitle(( "Ants FPS:" + std::to_string(GetFPS())).c_str());
 
@@ -207,36 +193,36 @@ void Simulation::Update(double delta)
 		const int fps = GetFPS();
 		if ( fps < 10 )
 		{
-			m_gameSpeed = std::max(m_gameSpeed - 0.5 * delta, 1.0);
+			m_gameSpeed = std::max(m_gameSpeed - 0.5f * k_fixedTimestep, 1.f);
 		}
 		else if ( fps < 30 )
 		{
-			m_gameSpeed = std::max(m_gameSpeed - 0.1 * delta, 1.0);
+			m_gameSpeed = std::max(m_gameSpeed - 0.1f * k_fixedTimestep, 1.f);
 		}
 
 		if ( fps > 144 )
 		{
-			m_gameSpeed = std::min(m_gameSpeed + 0.5 * delta, 20.0);
+			m_gameSpeed = std::min(m_gameSpeed + 0.5f * k_fixedTimestep, 20.f);
 		}
 		else if ( fps > 60 )
 		{
-			m_gameSpeed = std::min(m_gameSpeed + 0.1 * delta, 20.0);
+			m_gameSpeed = std::min(m_gameSpeed + 0.1f * k_fixedTimestep, 20.f);
 		}
 	}
 
-	m_world.Update(delta);
+	m_world.Update(k_fixedTimestep);
 
 
-	#pragma omp parallel for default(none) shared(delta)
+#pragma omp parallel for default(none) shared(k_fixedTimestep)
 	for ( auto &ant: m_ants )
 	{
-		ant.Update(delta, m_world);
+		ant.Update(k_fixedTimestep, m_world);
 	}
 
 	// Thing that can't be parallelized are in here
 	for ( auto &ant: m_ants )
 	{
-		ant.PostUpdate(delta, m_world);
+		ant.PostUpdate(k_fixedTimestep, m_world);
 	}
 }
 

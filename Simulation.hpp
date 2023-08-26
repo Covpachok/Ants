@@ -19,7 +19,7 @@ private:
 	void Init();
 
 	void HandleInput();
-	void Update(double delta);
+	void Update();
 	void Draw();
 
 	void Reset();
