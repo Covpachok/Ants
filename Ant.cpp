@@ -1,6 +1,6 @@
-#include "Ant.hpp"
-#include <cmath>
 #include <random>
+
+#include "Ant.hpp"
 #include "World.hpp"
 #include "ValueTable.hpp"
 

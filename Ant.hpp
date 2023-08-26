@@ -1,8 +1,9 @@
 #ifndef ANTS_ANT_HPP
 #define ANTS_ANT_HPP
 
-#include "raylib.h"
 #include <cmath>
+
+#include <raylib.h>
 #include "ValueTable.hpp"
 
 class World;

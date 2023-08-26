@@ -5,7 +5,7 @@
 #include "World.hpp"
 #include "ValueTable.hpp"
 
-#include <list>
+#include <vector>
 
 class Simulation
 {
@@ -26,7 +26,7 @@ private:
 	void DebugGui();
 
 private:
-	std::list<Ant> m_ants;
+	std::vector<Ant> m_ants;
 	World m_world;
 
 	bool m_pause = false;

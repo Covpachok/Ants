@@ -1,9 +1,12 @@
 #include <iostream>
-#include "Simulation.hpp"
+#include <string>
+
 #include <raylib.h>
 #include <raymath.h>
 #include <imgui.h>
 #include <rlImGui.h>
+
+#include "Simulation.hpp"
 #include "ColorConvert.hpp"
 
 const int k_screenWidth  = 1280;

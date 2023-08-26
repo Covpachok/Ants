@@ -1,6 +1,9 @@
 #ifndef ANTS_WORLD_HPP
 #define ANTS_WORLD_HPP
 
+#include <iostream>
+#include <utility>
+
 #include "raylib.h"
 #include "ValueTable.hpp"
 
@@ -27,19 +30,30 @@ public:
 
 	void SetCell(int x, int y, CellType type);
 	void DecreaseCell(int x, int y);
-	const Cell &GetCell(int x, int y) const;
 
 	void AddHomePheromone(int x, int y, double intensity);
 	void AddFoodPheromone(int x, int y, double intensity);
 
-	double GetFoodPheromone(int x, int y) const;
-	double GetHomePheromone(int x, int y) const;
+	inline double GetFoodPheromone(int x, int y) const
+	{
+		return IsInBounds(x, y) ? m_foodPheromoneMap[y][x] : 0;
+	}
+
+	inline double GetHomePheromone(int x, int y) const
+	{
+		return IsInBounds(x, y) ? m_homePheromoneMap[y][x] : 0;
+	}
+
+	inline const Cell &GetCell(int x, int y) const
+	{
+		return IsInBounds(x, y) ? m_worldMap[y][x] : m_worldMap[0][0];
+	}
 
 	void Draw(bool h = true, bool f = true) const;
 
 	inline std::pair<int, int> ScreenToWorld(float x, float y) const
 	{
-		return {x / m_screenToWorldRatio, y / m_screenToWorldRatio};
+		return {x * m_screenToWorldInverseRatio, y * m_screenToWorldInverseRatio};
 	}
 
 	inline std::pair<int, int> ScreenToWorld(Vector2 pos) const
@@ -53,6 +67,7 @@ public:
 	}
 
 	inline float GetScreenToWorldRatio() const { return m_screenToWorldRatio; }
+	inline float GetScreenToWorldInverseRatio() const { return m_screenToWorldInverseRatio; }
 
 	inline Vector2 GetScreenHomePos() const { return m_screenHomePos; }
 	inline float GetScreenHomeRadius() const { return m_screenHomeRadius; }
@@ -73,10 +88,11 @@ private:
 	int m_height;
 
 	float m_screenToWorldRatio;
+	float m_screenToWorldInverseRatio;
 
 	// -------------
 
-	Cell *m_worldMap;
+	Cell **m_worldMap;
 
 	Image   m_worldImage;
 	Texture m_worldTexture;
@@ -85,8 +101,8 @@ private:
 	double m_homePheromoneEvaporationRate;
 	double m_foodPheromoneEvaporationRate;
 
-	double *m_homePheromoneMap;
-	double *m_foodPheromoneMap;
+	double **m_homePheromoneMap;
+	double **m_foodPheromoneMap;
 
 	Image   m_homePheromoneImage{};
 	Texture m_homePheromoneTexture{};
