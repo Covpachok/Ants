@@ -9,6 +9,8 @@
 #include "Simulation.hpp"
 #include "ColorConvert.hpp"
 
+#include "omp.h"
+
 const int k_screenWidth  = 1280;
 const int k_screenHeight = 720;
 
@@ -84,12 +86,12 @@ void Simulation::HandleInput()
 	}
 
 	Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), m_camera);
-	if(m_choosingHomePos)
+	if ( m_choosingHomePos )
 	{
-		if( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+		if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 		{
 			auto worldPos = m_world.ScreenToWorld(mouseWorldPos);
-			if(m_world.IsInBounds(worldPos))
+			if ( m_world.IsInBounds(worldPos))
 			{
 				auto homePosRef = g_valueTable.GetMutableWorldTable().homePos;
 				homePosRef[0] = worldPos.first;
@@ -102,7 +104,7 @@ void Simulation::HandleInput()
 		}
 	}
 
-	float   wheel         = GetMouseWheelMove();
+	float wheel = GetMouseWheelMove();
 	if ( wheel != 0.f )
 	{
 		m_camera.offset = GetMousePosition();
@@ -224,24 +226,17 @@ void Simulation::Update(double delta)
 
 	m_world.Update(delta);
 
+
+	#pragma omp parallel for default(none) shared(delta)
 	for ( auto &ant: m_ants )
 	{
 		ant.Update(delta, m_world);
+	}
 
-		/*
-			auto pos = ant.GetPos();
-	//		int  y   = floor(pos.y), x = floor(pos.x);
-			auto p   = m_world.ScreenToWorld(pos.x, pos.y);
-
-			if ( ant.IsGotFood())
-			{
-				m_world.AddFoodPheromone(p.first, p.second, k_foodPheromoneIntensity * delta * ant.GetFoodStrength());
-			}
-			else
-			{
-				m_world.AddHomePheromone(p.first, p.second, k_homePheromoneIntensity * delta * ant.GetHomeStrength());
-			}
-		 */
+	// Thing that can't be parallelized are in here
+	for ( auto &ant: m_ants )
+	{
+		ant.PostUpdate(delta, m_world);
 	}
 }
 
@@ -322,7 +317,7 @@ void Simulation::DebugGui()
 		Reset();
 	}
 
-	if(ImGui::Button("Reset values"))
+	if ( ImGui::Button("Reset values"))
 	{
 
 	}

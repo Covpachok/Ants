@@ -13,9 +13,10 @@ class Ant
 public:
 	void Init(float startX, float startY);
 
-	void Update(float delta, World &world);
+	void Update(float delta, const World &world);
+	void PostUpdate(float delta, World &world);
 
-	void CheckCollisions(World &world);
+	void CheckCollisions(const World &world);
 
 	void SetGotFood(bool val) { m_gotFood = val; }
 
@@ -35,14 +36,16 @@ public:
 	void Draw();
 
 	void Rotate(float delta);
-private:
+
 	void SpawnPheromone(World &world);
+
+private:
 
 	void Move(float delta);
 
 	void StayOnScreen();
 
-	void CheckPheromones(World &world);
+	void CheckPheromones(const World &world);
 
 	void RandomizeAngle(float pi = M_PI);
 
@@ -64,6 +67,9 @@ private:
 
 	float m_lastPheromoneSpawnTime = 0;
 	float m_lastPheromoneCheckTime = 0;
+
+	bool                m_shouldDecreaseCell = false;
+	std::pair<int, int> m_cellToDecreasePos;
 };
 
 

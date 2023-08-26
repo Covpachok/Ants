@@ -4,6 +4,8 @@
 #include "World.hpp"
 #include "ValueTable.hpp"
 
+#include "omp.h"
+
 //const float k_antRotationSpeed    = 12; // 12
 //const float k_antRandomAngle      = 0.3; // 0.3
 //const float k_antFoodStrengthLoss = 0.025; // 0.02
@@ -20,7 +22,7 @@ void Ant::Init(float startX, float startY)
 	m_desiredAngle = m_angle;
 }
 
-void Ant::Update(float delta, World &world)
+void Ant::Update(float delta, const World &world)
 {
 	m_lastPheromoneSpawnTime += delta;
 	m_lastPheromoneCheckTime += delta;
@@ -37,11 +39,20 @@ void Ant::Update(float delta, World &world)
 
 	Rotate(delta);
 	Move(delta);
+}
 
+void Ant::PostUpdate(float delta, World &world)
+{
 	if ( m_lastPheromoneSpawnTime > m_table->pheromoneSpawnDelay )
 	{
 		SpawnPheromone(world);
 		m_lastPheromoneSpawnTime = 0;
+	}
+
+	if ( m_shouldDecreaseCell )
+	{
+		m_shouldDecreaseCell = false;
+		world.DecreaseCell(m_cellToDecreasePos.first, m_cellToDecreasePos.second);
 	}
 }
 
@@ -95,7 +106,7 @@ void Ant::SpawnPheromone(World &world)
 	}
 }
 
-void Ant::CheckCollisions(World &world)
+void Ant::CheckCollisions(const World &world)
 {
 	const auto  homePos    = world.GetScreenHomePos();
 	const float homeRadius = world.GetScreenHomeRadius();
@@ -122,7 +133,10 @@ void Ant::CheckCollisions(World &world)
 		if ( !m_gotFood )
 		{
 			m_foodStrength = 1;
-			world.DecreaseCell(checkMapPos.first, checkMapPos.second);
+
+			m_shouldDecreaseCell = true;
+			m_cellToDecreasePos  = checkMapPos;
+
 			m_gotFood = true;
 //			TurnBackward();
 		}
@@ -134,11 +148,11 @@ void Ant::CheckCollisions(World &world)
 
 		RandomizeAngle(M_PI_2);
 
-		CheckPheromones(world);
+//		CheckPheromones(world);
 	}
 }
 
-void Ant::CheckPheromones(World &world)
+void Ant::CheckPheromones(const World &world)
 {
 	Vector2 checkPos;
 
@@ -323,4 +337,3 @@ void Ant::RandomizeDesiredAngle(float pi)
 {
 	m_desiredAngle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.0;
 }
-

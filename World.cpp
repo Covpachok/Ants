@@ -2,6 +2,8 @@
 #include <iostream>
 #include "World.hpp"
 
+#include "omp.h"
+
 void World::Init(int width, int height)
 {
 	m_valueTable = &g_valueTable.GetWorldTable();
@@ -89,7 +91,6 @@ World::~World()
 
 void World::Update(double delta)
 {
-	int       index = 0;
 	for ( int y     = -m_homeRadius; y < m_homeRadius; ++y )
 	{
 		for ( int x = -m_homeRadius; x < m_homeRadius; ++x )
@@ -101,11 +102,12 @@ void World::Update(double delta)
 		}
 	}
 
-	for ( int y = 0; y < m_height; ++y )
+	#pragma omp parallel for default(none) shared(delta)
+	for (int y = 0; y < m_height; ++y )
 	{
-		for ( int x = 0; x < m_width; ++x )
+		for (int x = 0; x < m_width; ++x )
 		{
-			index = ToMapIndex(x, y);
+			int index = ToMapIndex(x, y);
 			m_homePheromoneMap[y][x] = std::max(m_homePheromoneMap[y][x] - ( m_homePheromoneEvaporationRate * delta ),
 			                                    0.0);
 			m_foodPheromoneMap[y][x] = std::max(m_foodPheromoneMap[y][x] - ( m_foodPheromoneEvaporationRate * delta ),
