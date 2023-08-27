@@ -6,7 +6,7 @@
 
 #include "omp.h"
 
-constexpr float k_antPheromoneCheckDelay = 0.05f;
+constexpr float k_antFovCheckDelay = 0.05f;
 
 bool CheckPointCircleCollision(Vector2 center1, Vector2 center2, float radius2)
 {
@@ -34,13 +34,13 @@ void Ant::Init(float startX, float startY)
 void Ant::Update(const float delta, const World &world)
 {
 	m_lastPheromoneSpawnTime += delta;
-	m_lastPheromoneCheckTime += delta;
+	m_lastFovCheckTime += delta;
 
 	CheckCollisions(world);
-	if ( m_lastPheromoneCheckTime > k_antPheromoneCheckDelay )
+	if ( m_lastFovCheckTime > k_antFovCheckDelay )
 	{
 		CheckInFov(world);
-		m_lastPheromoneCheckTime = 0;
+		m_lastFovCheckTime = 0;
 	}
 
 	m_foodStrength = std::max(m_foodStrength - delta * m_table->foodPheromoneStrengthLoss, 0.f);

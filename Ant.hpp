@@ -66,7 +66,7 @@ private:
 	float m_foodStrength = 0;
 
 	float m_lastPheromoneSpawnTime = 0;
-	float m_lastPheromoneCheckTime = 0;
+	float m_lastFovCheckTime       = 0;
 
 	bool m_gotFood            = false;
 	bool m_shouldDecreaseCell = false;

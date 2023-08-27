@@ -4,6 +4,7 @@
 #include "Ant.hpp"
 #include "World.hpp"
 #include "ValueTable.hpp"
+#include "Brush.hpp"
 
 #include <vector>
 #include <execution>
@@ -24,27 +25,31 @@ private:
 
 	void Reset();
 
-	void DebugGui();
-	void DebugVarsGui();
+	void ShowGui();
+	void StatisticsGui();
+	void SettingsGui();
+	void AdvancedSettingsGui();
 
 private:
 	std::vector<Ant> m_ants;
-	World m_world;
-
-	bool m_pause = false;
-
-	bool m_drawHomePheromones = false;
-	bool m_drawFoodPheromones = false;
-	bool m_drawAnts = true;
+	World            m_world;
 
 	float m_gameSpeed = 1;
 
 	Camera2D m_camera;
 
-	bool m_shouldHandleInput = true;
-	bool m_adaptiveSpeed = false;
+	Brush m_brush;
 
-	bool m_showSimulationVariables = false;
+	bool m_pause = false;
+
+	bool m_drawHomePheromones = false;
+	bool m_drawFoodPheromones = false;
+	bool m_drawAnts           = true;
+
+	bool m_shouldHandleInput = true;
+	bool m_adaptiveSpeed     = false;
+
+	bool m_showAdvancedSettings = false;
 
 	bool m_choosingHomePos = false;
 };

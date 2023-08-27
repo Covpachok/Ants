@@ -107,45 +107,7 @@ void Simulation::HandleInput()
 	{
 		auto pos = m_world.ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
 
-		int       radius        = 5;
-		const int radiusSquared = radius * radius;
-
-		for ( int y = -radius; y <= radius; ++y )
-		{
-			for ( int x = -radius; x <= radius; ++x )
-			{
-				if ( x * x + y * y <= radiusSquared )
-				{
-					m_world.SetCell(pos.first + x, pos.second + y, World::Food);
-				}
-			}
-		}
-	}
-
-	if ( IsKeyDown(KEY_W))
-	{
-		auto      pos    = m_world.ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
-		int       radius = 5;
-		for ( int y      = -radius; y <= radius; ++y )
-		{
-			for ( int x = -radius; x <= radius; ++x )
-			{
-				m_world.SetCell(pos.first + x, pos.second + y, World::Wall);
-			}
-		}
-	}
-
-	if ( IsKeyDown(KEY_E))
-	{
-		auto      pos    = m_world.ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
-		int       radius = 5;
-		for ( int y      = -radius; y <= radius; ++y )
-		{
-			for ( int x = -radius; x <= radius; ++x )
-			{
-				m_world.SetCell(pos.first + x, pos.second + y, World::None);
-			}
-		}
+		m_brush.Paint(m_world, pos.first, pos.second);
 	}
 
 	if ( IsKeyPressed(KEY_SPACE))
@@ -250,7 +212,7 @@ void Simulation::Draw()
 	}
 	EndMode2D();
 
-	DebugGui();
+	ShowGui();
 
 	EndDrawing();
 }
@@ -275,53 +237,90 @@ void Simulation::Reset()
 	Init();
 }
 
-void Simulation::DebugGui()
+void Simulation::ShowGui()
 {
 	ImGuiIO &io = ImGui::GetIO();
 	m_shouldHandleInput = !( io.WantCaptureMouse || io.WantCaptureKeyboard );
 
 	rlImGuiBegin();
 
-	ImGui::Begin("Ants");
+	StatisticsGui();
+	SettingsGui();
+
+	if ( m_showAdvancedSettings )
 	{
-		if ( ImGui::CollapsingHeader("Statistics"))
-		{
-			ImGui::Value("Collected food ", m_world.GetCollectedFoodAmount());
-			ImGui::Value("Delivered food ", m_world.GetDeliveredFoodAmount());
-			ImGui::Value("Not delivered  ", m_world.GetCollectedFoodAmount() - m_world.GetDeliveredFoodAmount());
+		AdvancedSettingsGui();
+	}
 
-			ImGui::Separator();
+	rlImGuiEnd();
+}
 
-			ImGui::Value("Remaining food ", m_world.GetRemainingFoodAmount());
-			ImGui::Value("Total food     ", m_world.GetTotalFoodAmount());
-
-			ImGui::Separator();
-
-			ImGui::Text("Delivered/Total : %d/%d", m_world.GetDeliveredFoodAmount(), m_world.GetTotalFoodAmount());
-		}
+void Simulation::StatisticsGui()
+{
+	ImGui::Begin("Statistics");
+	{
+		ImGui::Value("Collected food ", m_world.GetCollectedFoodAmount());
+		ImGui::Value("Delivered food ", m_world.GetDeliveredFoodAmount());
+		ImGui::Value("Not delivered  ", m_world.GetCollectedFoodAmount() - m_world.GetDeliveredFoodAmount());
 
 		ImGui::Separator();
 
+		ImGui::Value("Remaining food ", m_world.GetRemainingFoodAmount());
+		ImGui::Value("Total food     ", m_world.GetTotalFoodAmount());
+
+		ImGui::Separator();
+
+		ImGui::Text("Delivered/Total : %d/%d", m_world.GetDeliveredFoodAmount(), m_world.GetTotalFoodAmount());
+	}
+	ImGui::End();
+}
+
+void Simulation::SettingsGui()
+{
+	ImGui::Begin("Main settings");
+	{
+		ImGui::SeparatorText("Brush settings");
+		{
+			const char *brushTitles[Brush::BrushType::Amount] = {"Point", "Square", "Round"};
+			const char *paintTitles[Brush::BrushType::Amount] = {"Erase", "Food", "Wall"};
+
+			int              size      = m_brush.GetBrushSize();
+			Brush::BrushType brushType = m_brush.GetBrushType();
+			World::CellType  paintType = m_brush.GetPaintType();
+
+			ImGui::SliderInt("Brush size", &size, 1, 100);
+
+			ImGui::Combo("Paint type", reinterpret_cast<int *>(&paintType),
+			             paintTitles, static_cast<int>(World::CellType::Amount));
+			ImGui::Combo("Brush type", reinterpret_cast<int *>(&brushType),
+			             brushTitles, static_cast<int>(Brush::BrushType::Amount));
+
+			m_brush.SetBrushSize(size);
+			m_brush.SetBrushType(brushType);
+			m_brush.SetPaintType(paintType);
+		}
 
 		ImGui::SeparatorText("Draw settings");
-
-		ImGui::Checkbox("[1] Home", &m_drawHomePheromones);
-		ImGui::SameLine();
-		ImGui::Checkbox("[2] Food", &m_drawFoodPheromones);
-		ImGui::SameLine();
-		ImGui::Checkbox("[3] Ants", &m_drawAnts);
+		{
+			ImGui::Checkbox("[1] Home", &m_drawHomePheromones);
+			ImGui::SameLine();
+			ImGui::Checkbox("[2] Food", &m_drawFoodPheromones);
+			ImGui::SameLine();
+			ImGui::Checkbox("[3] Ants", &m_drawAnts);
+		}
 
 		ImGui::SeparatorText("Speed settings");
+		{
+			ImGui::Checkbox("[SPACE] Pause", &m_pause);
+			ImGui::SameLine();
+			ImGui::Checkbox("[A] Adaptive speed", &m_adaptiveSpeed);
 
-		ImGui::Checkbox("[SPACE] Pause", &m_pause);
-		ImGui::SameLine();
-		ImGui::Checkbox("[A] Adaptive speed", &m_adaptiveSpeed);
-
-		ImGui::SliderFloat("Simulation speed", &m_gameSpeed, 0.1f, 20.f);
+			ImGui::SliderFloat("Simulation speed", &m_gameSpeed, 0.1f, 20.f);
+		}
 
 		ImGui::SeparatorText("Other");
 
-		ImGui::Checkbox("Show advanced settings", &m_showSimulationVariables);
+		ImGui::Checkbox("Show advanced settings", &m_showAdvancedSettings);
 
 		ImGui::Separator();
 
@@ -337,18 +336,11 @@ void Simulation::DebugGui()
 		ImGui::Text("(Some values will change only after simulation restart)");
 	}
 	ImGui::End();
-
-	if ( m_showSimulationVariables )
-	{
-		DebugVarsGui();
-	}
-
-	rlImGuiEnd();
 }
 
-void Simulation::DebugVarsGui()
+void Simulation::AdvancedSettingsGui()
 {
-	ImGui::Begin("Simulation variables");
+	ImGui::Begin("Advanced settings");
 	{
 		auto &antsValueTable  = g_valueTable.GetMutableAntsTable();
 		auto &worldValueTable = g_valueTable.GetMutableWorldTable();
@@ -396,74 +388,75 @@ void Simulation::DebugVarsGui()
 		ImGui::Text(" ");
 
 		ImGui::SeparatorText("WILL CHANGE ONLY AFTER A RESET");
-
-		ImGui::InputInt("Ants amount", &worldValueTable.antsAmount);
-
-		if ( ImGui::TreeNode("World settings"))
 		{
-			ImGui::SeparatorText("World colors");
+			ImGui::InputInt("Ants amount", &worldValueTable.antsAmount);
+
+			if ( ImGui::TreeNode("World settings"))
 			{
-				using namespace ColorConvert;
+				ImGui::SeparatorText("World colors");
+				{
+					using namespace ColorConvert;
 
-				ImGuiRlColorEdit4("Food", worldValueTable.cellColors[World::Food]);
-				ImGuiRlColorEdit4("Wall", worldValueTable.cellColors[World::Wall]);
+					ImGuiRlColorEdit4("Food", worldValueTable.cellColors[World::Food]);
+					ImGuiRlColorEdit4("Wall", worldValueTable.cellColors[World::Wall]);
 
-				ImGui::Separator();
+					ImGui::Separator();
 
-				ImGuiRlColorEdit4("Home pheromone", worldValueTable.homePheromoneColor);
-				ImGuiRlColorEdit4("Food pheromone", worldValueTable.foodPheromoneColor);
+					ImGuiRlColorEdit4("Home pheromone", worldValueTable.homePheromoneColor);
+					ImGuiRlColorEdit4("Food pheromone", worldValueTable.foodPheromoneColor);
+				}
+
+				ImGui::SeparatorText("Cells");
+
+				ImGui::SliderInt("Food amount per cell", &worldValueTable.cellDefaultAmount[1], 1, 512);
+
+				ImGui::SeparatorText("Pheromones");
+
+				ImGui::InputFloat("Home evaporation rate", &worldValueTable.homePheromoneEvaporationRate);
+				ImGui::InputFloat("Food evaporation rate", &worldValueTable.foodPheromoneEvaporationRate);
+
+				ImGui::SeparatorText("Home");
+
+				ImGui::SliderInt("Radius", &worldValueTable.homeRadius, 2, 10);
+				ImGui::Checkbox("Centered position", &worldValueTable.centeredHomePos);
+				if ( !worldValueTable.centeredHomePos )
+				{
+					ImGui::Separator();
+					ImGui::InputInt2("Pos", worldValueTable.homePos);
+					ImGui::Checkbox("Choose by mouse click", &m_choosingHomePos);
+				}
+
+				ImGui::TreePop();
 			}
-
-			ImGui::SeparatorText("Cells");
-
-			ImGui::SliderInt("Food amount per cell", &worldValueTable.cellDefaultAmount[1], 1, 512);
-
-			ImGui::SeparatorText("Pheromones");
-
-			ImGui::InputFloat("Home evaporation rate", &worldValueTable.homePheromoneEvaporationRate);
-			ImGui::InputFloat("Food evaporation rate", &worldValueTable.foodPheromoneEvaporationRate);
-
-			ImGui::SeparatorText("Home");
-
-			ImGui::SliderInt("Radius", &worldValueTable.homeRadius, 2, 10);
-			ImGui::Checkbox("Centered position", &worldValueTable.centeredHomePos);
-			if ( !worldValueTable.centeredHomePos )
-			{
-				ImGui::Separator();
-				ImGui::InputInt2("Pos", worldValueTable.homePos);
-				ImGui::Checkbox("Choose by mouse click", &m_choosingHomePos);
-			}
-
-			ImGui::TreePop();
-		}
-
-		ImGui::Text(" ");
-
-		if ( ImGui::TreeNode("Map generation settings"))
-		{
-			ImGui::SeparatorText("Generation");
-
-			const char *titles[] = {"None", "Food only", "Walls only", "Food and Walls"};
-
-			ImGui::Combo("Cells to generate", reinterpret_cast<int *>(&worldValueTable.mapGenSettings),
-			             titles, static_cast<int>(MapGenSettings::Amount));
-
-			ImGui::SeparatorText("Noise gen");
-
-			ImGui::SliderFloat("Scale", &worldValueTable.mapGenNoiseScale, 1.f, 128.f);
-			ImGui::SliderInt("Blur", &worldValueTable.mapGenNoiseBlur, 0, 32);
-
-			ImGui::SeparatorText("Cells thresholds");
-
-			ImGui::SliderInt("Food low", &worldValueTable.mapGenFoodLowThreshold, 0, 255);
-			ImGui::SliderInt("Food high", &worldValueTable.mapGenFoodHighThreshold, 0, 255);
 
 			ImGui::Separator();
 
-			ImGui::SliderInt("Wall low", &worldValueTable.mapGenWallLowThreshold, 0, 255);
-			ImGui::SliderInt("Wall high", &worldValueTable.mapGenWallHighThreshold, 0, 255);
+			if ( ImGui::TreeNode("Map generation settings"))
+			{
+				ImGui::SeparatorText("Generation");
 
-			ImGui::TreePop();
+				const char *titles[] = {"None", "Food only", "Walls only", "Food and Walls"};
+
+				ImGui::Combo("Cells to generate", reinterpret_cast<int *>(&worldValueTable.mapGenSettings),
+				             titles, static_cast<int>(MapGenSettings::Amount));
+
+				ImGui::SeparatorText("Noise gen");
+
+				ImGui::SliderFloat("Scale", &worldValueTable.mapGenNoiseScale, 1.f, 128.f);
+				ImGui::SliderInt("Blur", &worldValueTable.mapGenNoiseBlur, 0, 32);
+
+				ImGui::SeparatorText("Cells thresholds");
+
+				ImGui::SliderInt("Food low", &worldValueTable.mapGenFoodLowThreshold, 0, 255);
+				ImGui::SliderInt("Food high", &worldValueTable.mapGenFoodHighThreshold, 0, 255);
+
+				ImGui::Separator();
+
+				ImGui::SliderInt("Wall low", &worldValueTable.mapGenWallLowThreshold, 0, 255);
+				ImGui::SliderInt("Wall high", &worldValueTable.mapGenWallHighThreshold, 0, 255);
+
+				ImGui::TreePop();
+			}
 		}
 	}
 	ImGui::End();

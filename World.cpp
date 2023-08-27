@@ -174,8 +174,11 @@ void World::SetCell(int x, int y, CellType type)
 
 	auto mapIndex = ToMapIndex(x, y);
 	m_worldColorMap[mapIndex] = m_cellColors[type];
-	m_homePheromoneMap[y][x]  = 0;
-	m_foodPheromoneMap[y][x]  = 0;
+	if ( type != None )
+	{
+		m_homePheromoneMap[y][x] = 0;
+		m_foodPheromoneMap[y][x] = 0;
+	}
 
 	if ( type == Food )
 	{

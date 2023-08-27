@@ -15,7 +15,7 @@ class World
 public:
 	enum CellType
 	{
-		None, Food, Wall
+		None, Food, Wall, Amount
 	};
 
 	struct Cell
