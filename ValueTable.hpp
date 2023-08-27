@@ -22,8 +22,8 @@ struct AntsValueTable
 	float foodPheromoneStrengthLoss = 0.025;
 	float homePheromoneStrengthLoss = 0.025;
 
-	float foodPheromoneIntensity = 128;
-	float homePheromoneIntensity = 128;
+	float foodPheromoneIntensity = 64;
+	float homePheromoneIntensity = 64;
 
 	float pheromoneSpawnDelay = 0.25f;
 
@@ -43,8 +43,8 @@ struct WorldValueTable
 	// Why? Because.
 	int cellDefaultAmount[k_cellsAmount] = {0, 30, 0};
 
-	float homePheromoneEvaporationRate = 1;
-	float foodPheromoneEvaporationRate = 1;
+	float homePheromoneEvaporationRate = 0.5f;
+	float foodPheromoneEvaporationRate = 0.5f;
 
 	int homeRadius = 5;
 

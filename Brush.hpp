@@ -26,7 +26,7 @@ public:
 	void Paint(World &world, int x, int y);
 
 	void SetPaintType(World::CellType type) { m_paintType = type; }
-	void SetBrushType(BrushType type);
+	void SetBrushType(BrushType type) { m_brushType = type; OnBrushChanged(); };
 	void SetBrushSize(int size) { m_brushSize = size; }
 
 	World::CellType GetPaintType() const { return m_paintType; }

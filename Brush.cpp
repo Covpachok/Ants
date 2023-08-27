@@ -44,30 +44,10 @@ void Brush::Paint(World &world, int x, int y)
 	m_paintFunc(world, *this, x, y);
 }
 
+const std::function<void(World &, Brush &, int x, int y)> k_paintFuncitons[Brush::Amount] = {PaintPoint, PaintSquare,
+                                                                                             PaintRound};
+
 void Brush::OnBrushChanged()
 {
-	switch ( m_brushType )
-	{
-		case Point:
-			m_paintFunc = PaintPoint;
-			break;
-		case Square:
-			m_paintFunc = PaintSquare;
-			break;
-		case Round:
-			m_paintFunc = PaintRound;
-			break;
-		default:
-			m_paintFunc = PaintPoint;
-	}
-}
-void Brush::SetBrushType(Brush::BrushType type)
-{
-	if ( type == m_brushType )
-	{
-		return;
-	}
-
-	m_brushType = type;
-	OnBrushChanged();
+	m_paintFunc = k_paintFuncitons[m_brushType];
 }

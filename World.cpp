@@ -225,7 +225,7 @@ void World::AddHomePheromone(int x, int y, double intensity)
 	{
 		return;
 	}
-	m_homePheromoneMap[y][x] = std::min(m_homePheromoneMap[y][x] + intensity, 512.0);
+	m_homePheromoneMap[y][x] = std::min(m_homePheromoneMap[y][x] + intensity, 255.0);
 }
 
 void World::AddFoodPheromone(int x, int y, double intensity)
@@ -235,7 +235,7 @@ void World::AddFoodPheromone(int x, int y, double intensity)
 		return;
 	}
 
-	m_foodPheromoneMap[y][x] = std::min(m_foodPheromoneMap[y][x] + intensity, 512.0);
+	m_foodPheromoneMap[y][x] = std::min(m_foodPheromoneMap[y][x] + intensity, 255.0);
 }
 
 

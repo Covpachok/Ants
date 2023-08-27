@@ -94,7 +94,7 @@ void Ant::Rotate(float delta)
 	static std::mt19937                          gen(rd());
 	static std::uniform_real_distribution<float> dis(-1.f, 1.f);
 
-	const float deviation   = ( GetRandomValue(0, 100) <= 1 ) ? dis(gen) : 0.0;
+	const float deviation   = ( GetRandomValue(0, 200) <= 3 ) ? dis(gen) : 0.0;
 	const float randomAngle = dis(gen) * m_table->antRandomAngle;
 
 	m_desiredAngle += randomAngle + deviation;
