@@ -6,10 +6,14 @@
 #define ANTS_VALUETABLE_HPP
 
 #include <raylib.h>
+#include <cassert>
 
 constexpr int k_cellsAmount = 3;
 
-enum class MapGenSettings { None, FoodOnly, WallsOnly, FoodAndWalls, Amount };
+enum class MapGenSettings
+{
+	None, FoodOnly, WallsOnly, FoodAndWalls, Amount
+};
 
 struct AntsValueTable
 {
@@ -54,8 +58,8 @@ struct WorldValueTable
 	int antsAmount = 1000;
 
 //	bool  shouldGenerateMap = true;
-	float mapGenNoiseScale  = 8.f;
-	int   mapGenNoiseBlur   = 2;
+	float mapGenNoiseScale = 8.f;
+	int   mapGenNoiseBlur  = 2;
 
 	MapGenSettings mapGenSettings = MapGenSettings::FoodAndWalls;
 
@@ -75,15 +79,15 @@ public:
 	AntsValueTable &GetMutableAntsTable() { return m_antsTable; }
 	WorldValueTable &GetMutableWorldTable() { return m_worldTable; }
 
-	ValueTable &operator=(ValueTable &&other) = default;
-	ValueTable &operator=(const ValueTable &other) = default;
+	void Reset()
+	{
+		m_antsTable  = AntsValueTable();
+		m_worldTable = WorldValueTable();
+	};
 
 private:
 	AntsValueTable  m_antsTable;
 	WorldValueTable m_worldTable;
 };
-
-inline ValueTable       g_valueTable;
-inline const ValueTable g_defaultValueTable;
 
 #endif //ANTS_VALUETABLE_HPP

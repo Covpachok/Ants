@@ -18,17 +18,17 @@ bool CheckPointCircleCollision(Vector2 center1, Vector2 center2, float radius2)
 	return distanceSquared <= radius2 * radius2;
 }
 
-void Ant::Init(float startX, float startY)
+void Ant::Init(float startX, float startY, const AntsValueTable &valueTable)
 {
-	m_table = &g_valueTable.GetAntsTable();
+	m_valueTable = &valueTable;
 
 	m_pos          = {startX, startY};
 	m_prevPos      = m_pos;
 	m_angle        = static_cast<float>(GetRandomValue(M_PI * -100, M_PI * 100)) / 100.f;
 	m_desiredAngle = m_angle;
 
-	m_colorsPtr[0] = &m_table->antDefaultColor;
-	m_colorsPtr[1] = &m_table->antWithFoodColor;
+	m_colorsPtr[0] = &m_valueTable->antDefaultColor;
+	m_colorsPtr[1] = &m_valueTable->antWithFoodColor;
 }
 
 void Ant::Update(const float delta, const World &world)
@@ -43,8 +43,8 @@ void Ant::Update(const float delta, const World &world)
 		m_lastFovCheckTime = 0;
 	}
 
-	m_foodStrength = std::max(m_foodStrength - delta * m_table->foodPheromoneStrengthLoss, 0.f);
-	m_homeStrength = std::max(m_homeStrength - delta * m_table->homePheromoneStrengthLoss, 0.f);
+	m_foodStrength = std::max(m_foodStrength - delta * m_valueTable->foodPheromoneStrengthLoss, 0.f);
+	m_homeStrength = std::max(m_homeStrength - delta * m_valueTable->homePheromoneStrengthLoss, 0.f);
 
 	Rotate(delta);
 	Move(delta);
@@ -52,7 +52,7 @@ void Ant::Update(const float delta, const World &world)
 
 void Ant::PostUpdate(const float delta, World &world)
 {
-	if ( m_lastPheromoneSpawnTime > m_table->pheromoneSpawnDelay )
+	if ( m_lastPheromoneSpawnTime > m_valueTable->pheromoneSpawnDelay )
 	{
 		SpawnPheromone(world);
 		m_lastPheromoneSpawnTime = 0;
@@ -80,7 +80,7 @@ void Ant::Move(float delta)
 {
 	m_prevPos = m_pos;
 
-	const float speed = m_table->antMovementSpeed * delta;
+	const float speed = m_valueTable->antMovementSpeed * delta;
 
 	m_pos.x += speed * std::cos(m_angle);
 	m_pos.y += speed * std::sin(m_angle);
@@ -95,7 +95,7 @@ void Ant::Rotate(float delta)
 	static std::uniform_real_distribution<float> dis(-1.f, 1.f);
 
 	const float deviation   = ( GetRandomValue(0, 200) <= 3 ) ? dis(gen) : 0.0;
-	const float randomAngle = dis(gen) * m_table->antRandomAngle;
+	const float randomAngle = dis(gen) * m_valueTable->antRandomAngle;
 
 	m_desiredAngle += randomAngle + deviation;
 
@@ -113,7 +113,7 @@ void Ant::Rotate(float delta)
 	float angleDiff = m_desiredAngle - m_angle;
 	angleDiff = std::remainder(angleDiff, 2.0f * static_cast<float>(M_PI));
 
-	m_angle += angleDiff * m_table->antRotationSpeed * delta;
+	m_angle += angleDiff * m_valueTable->antRotationSpeed * delta;
 }
 
 void Ant::SpawnPheromone(World &world)
@@ -122,11 +122,11 @@ void Ant::SpawnPheromone(World &world)
 
 	if ( m_gotFood )
 	{
-		world.AddFoodPheromone(pos.first, pos.second, m_table->foodPheromoneIntensity * m_foodStrength);
+		world.AddFoodPheromone(pos.first, pos.second, m_valueTable->foodPheromoneIntensity * m_foodStrength);
 	}
 	else
 	{
-		world.AddHomePheromone(pos.first, pos.second, m_table->homePheromoneIntensity * m_homeStrength);
+		world.AddHomePheromone(pos.first, pos.second, m_valueTable->homePheromoneIntensity * m_homeStrength);
 	}
 }
 
@@ -227,7 +227,7 @@ void Ant::CheckInFov(const World &world)
 
 	float screenToMapRatio = world.GetScreenToWorldRatio();
 
-	for ( int j = 1; j <= m_table->antFovRange && !foundThing; ++j )
+	for ( int j = 1; j <= m_valueTable->antFovRange && !foundThing; ++j )
 	{
 		const float multiplier = screenToMapRatio * j;
 		for ( int   i          = -j / 2 - 1; i <= j / 2 + 1; ++i )

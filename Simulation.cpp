@@ -42,6 +42,18 @@ Simulation::~Simulation()
 	CloseWindow();
 }
 
+void Simulation::Init()
+{
+	m_ants.resize(m_valueTable.GetWorldTable().antsAmount);
+
+	m_world.Init(k_screenWidth / 3, k_screenHeight / 3, m_valueTable.GetWorldTable());
+	auto       homePos = m_world.GetScreenHomePos();
+	for ( auto &ant: m_ants )
+	{
+		ant.Init(homePos.x, homePos.y, m_valueTable.GetAntsTable());
+	}
+}
+
 void Simulation::Start()
 {
 	float delta = 0;
@@ -66,6 +78,7 @@ void Simulation::HandleInput()
 {
 	if ( !m_shouldHandleInput )
 	{
+		m_shouldHandleInput = true;
 		return;
 	}
 
@@ -77,7 +90,7 @@ void Simulation::HandleInput()
 			auto worldPos = m_world.ScreenToWorld(mouseWorldPos);
 			if ( m_world.IsInBounds(worldPos))
 			{
-				auto homePosRef = g_valueTable.GetMutableWorldTable().homePos;
+				auto homePosRef = m_valueTable.GetMutableWorldTable().homePos;
 				homePosRef[0] = worldPos.first;
 				homePosRef[1] = worldPos.second;
 
@@ -97,13 +110,13 @@ void Simulation::HandleInput()
 		m_camera.zoom   = std::fmax(m_camera.zoom, 0.1f);
 	}
 
-	if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+	if ( IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
 	{
 		Vector2 delta = Vector2Scale(GetMouseDelta(), -1.0f / m_camera.zoom);
 		m_camera.target = Vector2Add(m_camera.target, delta);
 	}
 
-	if ( IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+	if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 	{
 		auto pos = m_world.ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
 
@@ -149,6 +162,11 @@ void Simulation::HandleInput()
 		{
 			m_gameSpeed = 1;
 		}
+	}
+
+	if ( IsKeyPressed(KEY_F11))
+	{
+		m_showGui = !m_showGui;
 	}
 }
 
@@ -212,22 +230,14 @@ void Simulation::Draw()
 	}
 	EndMode2D();
 
-	ShowGui();
+	if ( m_showGui )
+	{
+		ShowGui();
+	}
 
 	EndDrawing();
 }
 
-void Simulation::Init()
-{
-	m_ants.resize(g_valueTable.GetWorldTable().antsAmount);
-
-	m_world.Init(k_screenWidth / 3, k_screenHeight / 3);
-	auto       homePos = m_world.GetScreenHomePos();
-	for ( auto &ant: m_ants )
-	{
-		ant.Init(homePos.x, homePos.y);
-	}
-}
 
 void Simulation::Reset()
 {
@@ -288,6 +298,8 @@ void Simulation::SettingsGui()
 			Brush::BrushType brushType = m_brush.GetBrushType();
 			World::CellType  paintType = m_brush.GetPaintType();
 
+			ImGui::Text("Press Left Mouse Button to draw");
+
 			ImGui::SliderInt("Brush size", &size, 1, 100);
 
 			ImGui::Combo("Paint type", reinterpret_cast<int *>(&paintType),
@@ -307,6 +319,8 @@ void Simulation::SettingsGui()
 			ImGui::Checkbox("[2] Food", &m_drawFoodPheromones);
 			ImGui::SameLine();
 			ImGui::Checkbox("[3] Ants", &m_drawAnts);
+			ImGui::SameLine();
+			ImGui::Checkbox("[F11] Show gui", &m_showGui);
 		}
 
 		ImGui::SeparatorText("Speed settings");
@@ -315,7 +329,7 @@ void Simulation::SettingsGui()
 			ImGui::SameLine();
 			ImGui::Checkbox("[A] Adaptive speed", &m_adaptiveSpeed);
 
-			ImGui::SliderFloat("Simulation speed", &m_gameSpeed, 0.1f, 20.f);
+			ImGui::SliderFloat("[+][-] Simulation speed", &m_gameSpeed, 0.1f, 20.f);
 		}
 
 		ImGui::SeparatorText("Other");
@@ -324,14 +338,14 @@ void Simulation::SettingsGui()
 
 		ImGui::Separator();
 
-		if ( ImGui::Button("Restart simulation"))
+		if ( ImGui::Button("[R] Restart simulation"))
 		{
 			Reset();
 		}
 
 		if ( ImGui::Button("Reset settings values"))
 		{
-			g_valueTable = g_defaultValueTable;
+			m_valueTable.Reset();
 		}
 		ImGui::Text("(Some values will change only after simulation restart)");
 	}
@@ -342,8 +356,8 @@ void Simulation::AdvancedSettingsGui()
 {
 	ImGui::Begin("Advanced settings");
 	{
-		auto &antsValueTable  = g_valueTable.GetMutableAntsTable();
-		auto &worldValueTable = g_valueTable.GetMutableWorldTable();
+		auto &antsValueTable  = m_valueTable.GetMutableAntsTable();
+		auto &worldValueTable = m_valueTable.GetMutableWorldTable();
 
 		ImGui::SeparatorText("REALTIME CHANGE");
 

@@ -4,9 +4,9 @@
 
 #include "omp.h"
 
-void World::Init(int width, int height)
+void World::Init(int width, int height, const WorldValueTable &valueTable)
 {
-	m_valueTable = &g_valueTable.GetWorldTable();
+	m_valueTable = &valueTable;
 
 	m_width  = width;
 	m_height = height;
@@ -98,10 +98,10 @@ void World::Init(int width, int height)
 		}
 	}
 
-	m_collectedFoodAmount  = 0;
-	m_deliveredFoodAmount  = 0;
-	m_remaingingFoodAmount = 0;
-	m_totalFoodAmount      = 0;
+	m_collectedFoodAmount = 0;
+	m_deliveredFoodAmount = 0;
+	m_remainingFoodAmount = 0;
+	m_totalFoodAmount     = 0;
 
 	GenerateMap();
 }
@@ -185,12 +185,12 @@ void World::SetCell(int x, int y, CellType type)
 		if ( prevCell.type == Food )
 		{
 			m_totalFoodAmount += m_cellDefaultAmount[Food] - prevCell.amount;
-			m_remaingingFoodAmount += m_cellDefaultAmount[Food] - prevCell.amount;
+			m_remainingFoodAmount += m_cellDefaultAmount[Food] - prevCell.amount;
 		}
 		else
 		{
 			m_totalFoodAmount += m_cellDefaultAmount[Food];
-			m_remaingingFoodAmount += m_cellDefaultAmount[Food];
+			m_remainingFoodAmount += m_cellDefaultAmount[Food];
 		}
 	}
 
@@ -209,7 +209,7 @@ void World::DecreaseCell(int x, int y)
 
 	if ( m_worldMap[y][x].type == Food && m_worldMap[y][x].amount >= 0 )
 	{
-		--m_remaingingFoodAmount;
+		--m_remainingFoodAmount;
 		++m_collectedFoodAmount;
 	}
 
@@ -287,7 +287,7 @@ void World::Erase()
 void World::Reset(int width, int height)
 {
 	Erase();
-	Init(width, height);
+	Init(width, height, *m_valueTable);
 }
 
 void World::GenerateMap()

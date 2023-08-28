@@ -34,6 +34,8 @@ private:
 	std::vector<Ant> m_ants;
 	World            m_world;
 
+	ValueTable m_valueTable;
+
 	float m_gameSpeed = 1;
 
 	Camera2D m_camera;
@@ -52,6 +54,7 @@ private:
 	bool m_showAdvancedSettings = false;
 
 	bool m_choosingHomePos = false;
+	bool m_showGui         = true;
 };
 
 

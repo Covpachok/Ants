@@ -25,7 +25,7 @@ public:
 	};
 
 public:
-	void Init(int width, int height);
+	void Init(int width, int height, const WorldValueTable &valueTable);
 
 	~World();
 
@@ -87,7 +87,7 @@ public:
 	int GetDeliveredFoodAmount() const { return m_deliveredFoodAmount; }
 
 	int GetTotalFoodAmount() const { return m_totalFoodAmount; }
-	int GetRemainingFoodAmount() const { return m_remaingingFoodAmount; }
+	int GetRemainingFoodAmount() const { return m_remainingFoodAmount; }
 
 private:
 	inline int ToMapIndex(int x, int y) const { return ( y * m_width ) + x; }
@@ -143,8 +143,8 @@ private:
 	int m_collectedFoodAmount = 0;
 	int m_deliveredFoodAmount = 0;
 
-	int m_totalFoodAmount      = 0;
-	int m_remaingingFoodAmount = 0;
+	int m_totalFoodAmount     = 0;
+	int m_remainingFoodAmount = 0;
 
 	std::vector<std::pair<int, int>> m_homeCellPositions;
 };

@@ -11,7 +11,7 @@ class World;
 class Ant
 {
 public:
-	void Init(float startX, float startY);
+	void Init(float startX, float startY, const AntsValueTable &valueTable);
 
 	void Update(float delta, const World &world);
 	void PostUpdate(float delta, World &world);
@@ -55,7 +55,7 @@ private:
 	Vector2 m_prevPos;
 	Vector2 m_pos;
 
-	const AntsValueTable *m_table;
+	const AntsValueTable *m_valueTable;
 
 	const Color *m_colorsPtr[2];
 
