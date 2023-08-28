@@ -3,6 +3,7 @@
 #include "World.hpp"
 
 #include "omp.h"
+#include <raymath.h>
 
 void World::Init(int width, int height, const WorldValueTable &valueTable)
 {
@@ -91,7 +92,7 @@ void World::Init(int width, int height, const WorldValueTable &valueTable)
 	{
 		for ( int x = -m_homeRadius; x < m_homeRadius; ++x )
 		{
-			if ( x * x + y * y <= m_homeRadius * m_homeRadius )
+			if ( x * x + y * y <= m_homeRadius * m_homeRadius)
 			{
 				m_homeCellPositions.emplace_back(m_homePos.first + x, m_homePos.second + y);
 			}
@@ -238,6 +239,17 @@ void World::AddFoodPheromone(int x, int y, double intensity)
 	m_foodPheromoneMap[y][x] = std::min(m_foodPheromoneMap[y][x] + intensity, 255.0);
 }
 
+void World::ClearPheromones()
+{
+	for ( int y = 0; y < m_height; ++y )
+	{
+		for ( int x = 0; x < m_width; ++x )
+		{
+			m_homePheromoneMap[y][x] = 0;
+			m_foodPheromoneMap[y][x] = 0;
+		}
+	}
+}
 
 void World::Draw(bool h, bool f) const
 {
@@ -360,4 +372,3 @@ void World::GenerateMap()
 
 	UnloadImageColors(noiseColors);
 }
-

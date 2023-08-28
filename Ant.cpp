@@ -94,7 +94,7 @@ void Ant::Rotate(float delta)
 	static std::mt19937                          gen(rd());
 	static std::uniform_real_distribution<float> dis(-1.f, 1.f);
 
-	const float deviation   = ( GetRandomValue(0, 200) <= 3 ) ? dis(gen) : 0.0;
+	const float deviation   = ( GetRandomValue(0, 1000) <= m_valueTable->deviationChance ) ? dis(gen) : 0.0;
 	const float randomAngle = dis(gen) * m_valueTable->antRandomAngle;
 
 	m_desiredAngle += randomAngle + deviation;
@@ -170,6 +170,14 @@ void Ant::CheckCollisions(const World &world)
 	if ( cellType == World::Wall )
 	{
 		m_pos = m_prevPos;
+
+		const auto prevMapPos = world.ScreenToWorld(m_prevPos.x, m_prevPos.y);
+		auto       prevCellType    = world.GetCell(prevMapPos.first, prevMapPos.second).type;
+
+		if(prevCellType == World::Wall)
+		{
+			m_pos = homePos;
+		}
 
 		RandomizeAngle(M_PI);
 	}

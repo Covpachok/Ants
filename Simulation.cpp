@@ -4,7 +4,9 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 #include <rlImGui.h>
+#include <filesystem>
 
 #include "Simulation.hpp"
 #include "ColorConvert.hpp"
@@ -34,6 +36,8 @@ Simulation::Simulation() :
 	m_camera.zoom     = 1;
 	m_camera.offset   = {0, 0};
 	m_camera.target   = {0, 0};
+
+	FindSaveFiles();
 }
 
 Simulation::~Simulation()
@@ -44,14 +48,8 @@ Simulation::~Simulation()
 
 void Simulation::Init()
 {
-	m_ants.resize(m_valueTable.GetWorldTable().antsAmount);
-
 	m_world.Init(k_screenWidth / 3, k_screenHeight / 3, m_valueTable.GetWorldTable());
-	auto       homePos = m_world.GetScreenHomePos();
-	for ( auto &ant: m_ants )
-	{
-		ant.Init(homePos.x, homePos.y, m_valueTable.GetAntsTable());
-	}
+	InitAnts();
 }
 
 void Simulation::Start()
@@ -85,6 +83,7 @@ void Simulation::HandleInput()
 	Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), m_camera);
 	if ( m_choosingHomePos )
 	{
+		m_paintingEnabled = false;
 		if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 		{
 			auto worldPos = m_world.ScreenToWorld(mouseWorldPos);
@@ -96,7 +95,6 @@ void Simulation::HandleInput()
 
 				m_choosingHomePos = false;
 			}
-
 			return;
 		}
 	}
@@ -116,7 +114,7 @@ void Simulation::HandleInput()
 		m_camera.target = Vector2Add(m_camera.target, delta);
 	}
 
-	if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+	if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT) && m_paintingEnabled )
 	{
 		auto pos = m_world.ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
 
@@ -167,6 +165,11 @@ void Simulation::HandleInput()
 	if ( IsKeyPressed(KEY_F11))
 	{
 		m_showGui = !m_showGui;
+	}
+
+	if ( IsKeyPressed(KEY_R))
+	{
+		Reset();
 	}
 }
 
@@ -242,9 +245,25 @@ void Simulation::Draw()
 void Simulation::Reset()
 {
 	m_world.Erase();
-	m_ants.clear();
-
+	ResetAnts();
 	Init();
+}
+
+void Simulation::InitAnts()
+{
+	m_ants.resize(m_valueTable.GetWorldTable().antsAmount);
+
+	auto       homePos = m_world.GetScreenHomePos();
+	for ( auto &ant: m_ants )
+	{
+		ant.Init(homePos.x, homePos.y, m_valueTable.GetAntsTable());
+	}
+}
+
+void Simulation::ResetAnts()
+{
+	m_ants.clear();
+	InitAnts();
 }
 
 void Simulation::ShowGui()
@@ -289,27 +308,32 @@ void Simulation::SettingsGui()
 {
 	ImGui::Begin("Main settings");
 	{
-		ImGui::SeparatorText("Brush settings");
+		ImGui::Checkbox("Painting enabled", &m_paintingEnabled);
+		if ( m_paintingEnabled )
 		{
-			const char *brushTitles[Brush::BrushType::Amount] = {"Point", "Square", "Round"};
-			const char *paintTitles[Brush::BrushType::Amount] = {"Erase", "Food", "Wall"};
+			ImGui::SeparatorText("Brush settings");
+			{
+				const char *brushTitles[Brush::BrushType::Amount] = {"Point", "Square", "Round"};
+				const char *paintTitles[Brush::BrushType::Amount] = {"Erase", "Food", "Wall"};
 
-			int              size      = m_brush.GetBrushSize();
-			Brush::BrushType brushType = m_brush.GetBrushType();
-			World::CellType  paintType = m_brush.GetPaintType();
+				int              size      = m_brush.GetBrushSize();
+				Brush::BrushType brushType = m_brush.GetBrushType();
+				World::CellType  paintType = m_brush.GetPaintType();
 
-			ImGui::Text("Press Left Mouse Button to draw");
+				ImGui::Text("Press Left Mouse Button to paint");
 
-			ImGui::SliderInt("Brush size", &size, 1, 100);
 
-			ImGui::Combo("Paint type", reinterpret_cast<int *>(&paintType),
-			             paintTitles, static_cast<int>(World::CellType::Amount));
-			ImGui::Combo("Brush type", reinterpret_cast<int *>(&brushType),
-			             brushTitles, static_cast<int>(Brush::BrushType::Amount));
+				ImGui::SliderInt("Brush size", &size, 1, 100);
 
-			m_brush.SetBrushSize(size);
-			m_brush.SetBrushType(brushType);
-			m_brush.SetPaintType(paintType);
+				ImGui::Combo("Paint type", reinterpret_cast<int *>(&paintType),
+				             paintTitles, static_cast<int>(World::CellType::Amount));
+				ImGui::Combo("Brush type", reinterpret_cast<int *>(&brushType),
+				             brushTitles, static_cast<int>(Brush::BrushType::Amount));
+
+				m_brush.SetBrushSize(size);
+				m_brush.SetBrushType(brushType);
+				m_brush.SetPaintType(paintType);
+			}
 		}
 
 		ImGui::SeparatorText("Draw settings");
@@ -343,6 +367,16 @@ void Simulation::SettingsGui()
 			Reset();
 		}
 
+		if ( ImGui::Button("Reset ants"))
+		{
+			ResetAnts();
+		}
+
+		if ( ImGui::Button("Clear pheromones"))
+		{
+			m_world.ClearPheromones();
+		}
+
 		if ( ImGui::Button("Reset settings values"))
 		{
 			m_valueTable.Reset();
@@ -350,6 +384,25 @@ void Simulation::SettingsGui()
 		ImGui::Text("(Some values will change only after simulation restart)");
 	}
 	ImGui::End();
+}
+
+void Simulation::FindSaveFiles()
+{
+	namespace fs = std::filesystem;
+	fs::path path = fs::current_path();
+
+	m_saveFiles.clear();
+
+	for ( const auto &entry: fs::directory_iterator(path))
+	{
+		if ( fs::is_regular_file(entry))
+		{
+			if ( entry.path().extension() == ".json" )
+			{
+				m_saveFiles.push_back(entry.path().filename().string());
+			}
+		}
+	}
 }
 
 void Simulation::AdvancedSettingsGui()
@@ -470,6 +523,59 @@ void Simulation::AdvancedSettingsGui()
 				ImGui::SliderInt("Wall high", &worldValueTable.mapGenWallHighThreshold, 0, 255);
 
 				ImGui::TreePop();
+			}
+		}
+
+		ImGui::SeparatorText("Presets");
+		{
+			ImGui::InputText("Save filename", &m_saveFilename);
+
+			if ( ImGui::Button("Save"))
+			{
+				m_valueTable.Save(m_saveFilename);
+			}
+
+			ImGui::Separator();
+
+			static size_t selectedIndex = 0;
+			if ( m_saveFiles.empty())
+			{
+				ImGui::TextDisabled("Not found any json files");
+			}
+			else
+			{
+				const char *previewValue = m_saveFiles[selectedIndex].c_str();
+				if ( ImGui::BeginCombo("Save files", previewValue))
+				{
+					for ( size_t i = 0; i < m_saveFiles.size(); ++i )
+					{
+						const bool isSelected = ( selectedIndex == i );
+						if ( ImGui::Selectable(m_saveFiles[i].c_str(), isSelected))
+						{
+							selectedIndex = i;
+						}
+
+						// Set the initial focus when opening the combo
+						// (scrolling + keyboard navigation focus)
+						if ( isSelected )
+						{
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+					ImGui::EndCombo();
+				}
+			}
+
+			ImGui::SameLine();
+
+			if ( ImGui::Button("Update list"))
+			{
+				FindSaveFiles();
+			}
+
+			if ( ImGui::Button("Load"))
+			{
+				m_valueTable.Load(m_saveFiles[selectedIndex]);
 			}
 		}
 	}

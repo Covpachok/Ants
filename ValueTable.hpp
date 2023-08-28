@@ -7,10 +7,11 @@
 
 #include <raylib.h>
 #include <cassert>
+#include <string>
 
 constexpr int k_cellsAmount = 3;
 
-enum class MapGenSettings
+enum MapGenSettings
 {
 	None, FoodOnly, WallsOnly, FoodAndWalls, Amount
 };
@@ -30,6 +31,8 @@ struct AntsValueTable
 	float homePheromoneIntensity = 64;
 
 	float pheromoneSpawnDelay = 0.25f;
+
+	int deviationChance = 45;
 
 	Color antDefaultColor  = {128, 128, 255, 128};
 	Color antWithFoodColor = {128, 255, 128, 128};
@@ -78,6 +81,9 @@ public:
 
 	AntsValueTable &GetMutableAntsTable() { return m_antsTable; }
 	WorldValueTable &GetMutableWorldTable() { return m_worldTable; }
+
+	void Save(const std::string &filename);
+	void Load(const std::string &filename);
 
 	void Reset()
 	{

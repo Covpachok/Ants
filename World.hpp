@@ -37,6 +37,8 @@ public:
 	void AddHomePheromone(int x, int y, double intensity);
 	void AddFoodPheromone(int x, int y, double intensity);
 
+	void ClearPheromones();
+
 	inline double GetFoodPheromone(int x, int y) const
 	{
 		return IsInBounds(x, y) ? m_foodPheromoneMap[y][x] : 0;
@@ -93,7 +95,6 @@ private:
 	inline int ToMapIndex(int x, int y) const { return ( y * m_width ) + x; }
 
 	void GenerateMap();
-
 
 private:
 	const WorldValueTable *m_valueTable;

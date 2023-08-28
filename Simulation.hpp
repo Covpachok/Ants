@@ -8,6 +8,8 @@
 
 #include <vector>
 #include <execution>
+#include <string>
+#include <list>
 
 class Simulation
 {
@@ -18,17 +20,21 @@ public:
 
 private:
 	void Init();
+	void InitAnts();
 
 	void HandleInput();
 	void Update();
 	void Draw();
 
 	void Reset();
+	void ResetAnts();
 
 	void ShowGui();
 	void StatisticsGui();
 	void SettingsGui();
 	void AdvancedSettingsGui();
+
+	void FindSaveFiles();
 
 private:
 	std::vector<Ant> m_ants;
@@ -42,6 +48,7 @@ private:
 
 	Brush m_brush;
 
+	// Mess of variables
 	bool m_pause = false;
 
 	bool m_drawHomePheromones = false;
@@ -55,6 +62,10 @@ private:
 
 	bool m_choosingHomePos = false;
 	bool m_showGui         = true;
+	bool m_paintingEnabled = true;
+
+	std::string m_saveFilename = "save";
+	std::vector<std::string> m_saveFiles;
 };
 
 

@@ -13,12 +13,14 @@ set(IMGUI_SOURCES
         ${IMGUI_FOLDER}/imgui_draw.cpp
         ${IMGUI_FOLDER}/imgui_widgets.cpp
         ${IMGUI_FOLDER}/imgui_tables.cpp
+        ${IMGUI_FOLDER}/misc/cpp/imgui_stdlib.cpp
         libs/rlImGui/rlImGui.cpp
-        Brush.hpp Brush.cpp)
+        Brush.hpp Brush.cpp ValueTable.cpp)
 
 add_subdirectory(libs/raylib)
 include_directories(${IMGUI_FOLDER})
 include_directories(libs/rlImGui)
+include_directories(libs)
 
 add_executable(${PROJECT_NAME} main.cpp ${IMGUI_SOURCES} Ant.cpp Ant.hpp World.cpp World.hpp Simulation.cpp Simulation.hpp ValueTable.hpp ColorConvert.hpp)
 
