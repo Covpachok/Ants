@@ -1,7 +1,3 @@
-//
-// Created by heylc on 28.08.2023.
-//
-
 #include <iostream>
 #include <fstream>
 #include <json.hpp>
@@ -83,13 +79,14 @@ void ValueTable::Save(const std::string &filename)
 void ValueTable::Load(const std::string &filename)
 {
 	std::ifstream f(filename);
-	json data;
+	json          data;
 	try
 	{
 		data = json::parse(f);
 	}
 	catch ( const json::exception &e )
 	{
+		std::cout << e.what() << std::endl;
 		return;
 	}
 
@@ -144,5 +141,4 @@ void ValueTable::Load(const std::string &filename)
 
 	m_worldTable.mapGenWallLowThreshold  = data["worldValueTable"]["mapGenWallLowThreshold"];
 	m_worldTable.mapGenWallHighThreshold = data["worldValueTable"]["mapGenWallHighThreshold"];
-
 }
