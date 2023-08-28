@@ -1,6 +1,3 @@
-//
-// Created by heylc on 27.08.2023.
-//
 #include "Brush.hpp"
 
 

@@ -1,7 +1,3 @@
-//
-// Created by heylc on 16.08.2023.
-//
-
 #ifndef ANTS_COLORCONVERT_HPP
 #define ANTS_COLORCONVERT_HPP
 

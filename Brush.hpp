@@ -1,7 +1,3 @@
-//
-// Created by heylc on 27.08.2023.
-//
-
 #ifndef ANTS_BRUSH_HPP
 #define ANTS_BRUSH_HPP
 

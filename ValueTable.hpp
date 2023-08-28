@@ -1,7 +1,3 @@
-//
-// Created by heylc on 15.08.2023.
-//
-
 #ifndef ANTS_VALUETABLE_HPP
 #define ANTS_VALUETABLE_HPP
 
