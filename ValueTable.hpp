@@ -7,11 +7,6 @@
 
 constexpr int k_cellsAmount = 3;
 
-enum MapGenSettings
-{
-	None, FoodOnly, WallsOnly, FoodAndWalls, Amount
-};
-
 struct AntsValueTable
 {
 	float antMovementSpeed = 40;
@@ -36,6 +31,11 @@ struct AntsValueTable
 
 struct WorldValueTable
 {
+	enum MapGenSettings
+	{
+		None, FoodOnly, WallsOnly, FoodAndWalls, Amount
+	};
+
 	Color foodPheromoneColor = {32, 128, 32, 0};
 	Color homePheromoneColor = {32, 32, 128, 0};
 

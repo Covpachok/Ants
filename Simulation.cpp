@@ -505,7 +505,7 @@ void Simulation::AdvancedSettingsGui()
 				const char *titles[] = {"None", "Food only", "Walls only", "Food and Walls"};
 
 				ImGui::Combo("Cells to generate", reinterpret_cast<int *>(&worldValueTable.mapGenSettings),
-				             titles, static_cast<int>(MapGenSettings::Amount));
+				             titles, static_cast<int>(WorldValueTable::MapGenSettings::Amount));
 
 				ImGui::SeparatorText("Noise gen");
 

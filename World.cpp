@@ -92,7 +92,7 @@ void World::Init(int width, int height, const WorldValueTable &valueTable)
 	{
 		for ( int x = -m_homeRadius; x < m_homeRadius; ++x )
 		{
-			if ( x * x + y * y <= m_homeRadius * m_homeRadius)
+			if ( x * x + y * y <= m_homeRadius * m_homeRadius )
 			{
 				m_homeCellPositions.emplace_back(m_homePos.first + x, m_homePos.second + y);
 			}
@@ -329,15 +329,15 @@ void World::GenerateMap()
 
 	switch ( m_valueTable->mapGenSettings )
 	{
-		case MapGenSettings::FoodOnly:
+		case WorldValueTable::MapGenSettings::FoodOnly:
 			genFunc = foodOnly;
 			break;
 
-		case MapGenSettings::WallsOnly:
+		case WorldValueTable::MapGenSettings::WallsOnly:
 			genFunc = wallsOnly;
 			break;
 
-		case MapGenSettings::FoodAndWalls:
+		case WorldValueTable::MapGenSettings::FoodAndWalls:
 			genFunc = foodAndWalls;
 			break;
 
