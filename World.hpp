@@ -20,8 +20,8 @@ public:
 
 	struct Cell
 	{
-		CellType type;
-		int      amount;
+		CellType type = None;
+		int      amount = 0;
 	};
 
 public:
@@ -38,6 +38,7 @@ public:
 	void AddFoodPheromone(int x, int y, double intensity);
 
 	void ClearPheromones();
+	void ClearMap();
 
 	inline double GetFoodPheromone(int x, int y) const
 	{

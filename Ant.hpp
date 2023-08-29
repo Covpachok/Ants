@@ -70,7 +70,10 @@ private:
 
 	bool m_gotFood            = false;
 	bool m_shouldDecreaseCell = false;
-	bool m_deliveredFood = false;
+	bool m_deliveredFood      = false;
+
+	bool  m_ignorePheromones  = false;
+	float m_lastDeviationTime = 0;
 
 	std::pair<int, int> m_cellToDecreasePos;
 };

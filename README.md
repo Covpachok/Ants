@@ -1,7 +1,7 @@
 # Ants
 
+Ants simulation made in C++
 
-## Description
+## Showcase
 
-## 
-![a](https://media.giphy.com/media/CN2Ck1PYYROpb2WOrL/giphy.gif)
+![a]()

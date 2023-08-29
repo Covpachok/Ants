@@ -10,20 +10,20 @@ constexpr int k_cellsAmount = 3;
 struct AntsValueTable
 {
 	float antMovementSpeed = 40;
-	float antRotationSpeed = 12;
+	float antRotationSpeed = 7;
 
 	float antRandomAngle = 0.3;
-	int   antFovRange    = 8;
+	int   antFovRange    = 12;
 
-	float foodPheromoneStrengthLoss = 0.025;
-	float homePheromoneStrengthLoss = 0.025;
+	float foodPheromoneStrengthLoss = 0.005;
+	float homePheromoneStrengthLoss = 0.005;
 
-	float foodPheromoneIntensity = 64;
-	float homePheromoneIntensity = 64;
+	float foodPheromoneIntensity = 128;
+	float homePheromoneIntensity = 128;
 
 	float pheromoneSpawnDelay = 0.25f;
 
-	int deviationChance = 45;
+	int deviationChance = 2;
 
 	Color antDefaultColor  = {128, 128, 255, 128};
 	Color antWithFoodColor = {128, 255, 128, 128};
@@ -36,8 +36,8 @@ struct WorldValueTable
 		None, FoodOnly, WallsOnly, FoodAndWalls, Amount
 	};
 
-	Color foodPheromoneColor = {32, 128, 32, 0};
-	Color homePheromoneColor = {32, 32, 128, 0};
+	Color foodPheromoneColor = {0, 255, 0, 0};
+	Color homePheromoneColor = {0, 0, 255, 0};
 
 	Color cellColors[k_cellsAmount] = {{0,   0,   0,   255},
 	                                   {0,   255, 64,  255},
@@ -46,8 +46,8 @@ struct WorldValueTable
 	// Why? Because.
 	int cellDefaultAmount[k_cellsAmount] = {0, 30, 0};
 
-	float homePheromoneEvaporationRate = 0.5f;
-	float foodPheromoneEvaporationRate = 0.5f;
+	float homePheromoneEvaporationRate = 0.4f;
+	float foodPheromoneEvaporationRate = 0.4f;
 
 	int homeRadius = 5;
 

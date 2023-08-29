@@ -226,7 +226,7 @@ void World::AddHomePheromone(int x, int y, double intensity)
 	{
 		return;
 	}
-	m_homePheromoneMap[y][x] = std::min(m_homePheromoneMap[y][x] + intensity, 255.0);
+	m_homePheromoneMap[y][x] = std::max(m_homePheromoneMap[y][x], intensity);
 }
 
 void World::AddFoodPheromone(int x, int y, double intensity)
@@ -236,19 +236,43 @@ void World::AddFoodPheromone(int x, int y, double intensity)
 		return;
 	}
 
-	m_foodPheromoneMap[y][x] = std::min(m_foodPheromoneMap[y][x] + intensity, 255.0);
+//	m_foodPheromoneMap[y][x] = std::min(m_foodPheromoneMap[y][x] + intensity, 255.0);
+	m_foodPheromoneMap[y][x] = std::max(m_foodPheromoneMap[y][x], intensity);
 }
 
 void World::ClearPheromones()
 {
 	for ( int y = 0; y < m_height; ++y )
 	{
+		const int rowIndex = y * m_width;
 		for ( int x = 0; x < m_width; ++x )
 		{
 			m_homePheromoneMap[y][x] = 0;
 			m_foodPheromoneMap[y][x] = 0;
+
+			const int index = rowIndex + x;
+			m_homePheromoneColorMap[index].a = 0;
+			m_foodPheromoneColorMap[index].a = 0;
 		}
 	}
+
+	UpdateTexture(m_homePheromoneTexture, m_homePheromoneColorMap);
+	UpdateTexture(m_foodPheromoneTexture, m_foodPheromoneColorMap);
+}
+
+void World::ClearMap()
+{
+	for ( int y = 0; y < m_height; ++y )
+	{
+		for ( int x = 0; x < m_width; ++x )
+		{
+			m_worldMap[y][x].type   = None;
+			m_worldMap[y][x].amount = 0;
+			m_worldColorMap[ToMapIndex(x, y)] = m_cellColors[None];
+		}
+	}
+
+	UpdateTexture(m_worldTexture, m_worldColorMap);
 }
 
 void World::Draw(bool h, bool f) const

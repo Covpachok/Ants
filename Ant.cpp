@@ -35,6 +35,18 @@ void Ant::Update(const float delta, const World &world)
 {
 	m_lastPheromoneSpawnTime += delta;
 	m_lastFovCheckTime += delta;
+	m_lastDeviationTime += delta;
+
+	if ( GetRandomValue(0, 10000) <= m_valueTable->deviationChance )
+	{
+		m_ignorePheromones  = true;
+		m_lastDeviationTime = 0;
+	}
+
+	if ( m_lastDeviationTime >= 1.f )
+	{
+		m_ignorePheromones = false;
+	}
 
 	CheckCollisions(world);
 	if ( m_lastFovCheckTime > k_antFovCheckDelay )
@@ -92,23 +104,11 @@ void Ant::Rotate(float delta)
 {
 	static std::random_device                    rd;
 	static std::mt19937                          gen(rd());
-	static std::uniform_real_distribution<float> dis(-1.f, 1.f);
+	static std::uniform_real_distribution<float> def(-1.f, 1.f);
 
-	const float deviation   = ( GetRandomValue(0, 1000) <= m_valueTable->deviationChance ) ? dis(gen) : 0.0;
-	const float randomAngle = dis(gen) * m_valueTable->antRandomAngle;
+	const float randomAngle = def(gen) * m_valueTable->antRandomAngle;
 
-	m_desiredAngle += randomAngle + deviation;
-
-	/*
-	if ( angleDiff > M_PI )
-	{
-		angleDiff -= 2 * M_PI;
-	}
-	else if ( angleDiff < -M_PI )
-	{
-		angleDiff += 2 * M_PI;
-	}
-	 */
+	m_desiredAngle += randomAngle;
 
 	float angleDiff = m_desiredAngle - m_angle;
 	angleDiff = std::remainder(angleDiff, 2.0f * static_cast<float>(M_PI));
@@ -171,10 +171,10 @@ void Ant::CheckCollisions(const World &world)
 	{
 		m_pos = m_prevPos;
 
-		const auto prevMapPos = world.ScreenToWorld(m_prevPos.x, m_prevPos.y);
-		auto       prevCellType    = world.GetCell(prevMapPos.first, prevMapPos.second).type;
+		const auto prevMapPos   = world.ScreenToWorld(m_prevPos.x, m_prevPos.y);
+		auto       prevCellType = world.GetCell(prevMapPos.first, prevMapPos.second).type;
 
-		if(prevCellType == World::Wall)
+		if ( prevCellType == World::Wall )
 		{
 			m_pos = homePos;
 		}
@@ -256,16 +256,21 @@ void Ant::CheckInFov(const World &world)
 				foundThing = true;
 				break;
 			}
-
-			if ( m_gotFood )
-			{
-				checkedPheromone = world.GetHomePheromone(checkMapPos.first, checkMapPos.second);
-			}
-			else if ( cellType == World::Food )
+			else if ( cellType == World::Food && !m_gotFood )
 			{
 				turnSide   = side;
 				foundThing = true;
 				break;
+			}
+
+			if ( m_ignorePheromones )
+			{
+				continue;
+			}
+
+			if ( m_gotFood )
+			{
+				checkedPheromone = world.GetHomePheromone(checkMapPos.first, checkMapPos.second);
 			}
 			else
 			{
@@ -301,12 +306,7 @@ void Ant::ChangeDesiredAngle(Vector2 desiredPos)
 
 void Ant::Draw()
 {
-//	DrawCircle(m_pos.x, m_pos.y, 2, m_gotFood ? k_antWithFoodColor : k_antColor);
 	DrawCircleSector(m_pos, 2, 0, 360, 1, *m_colorsPtr[m_gotFood]);
-//	auto forward  = Vector2Rotate({10, 0}, m_angle);
-//	auto dforward = Vector2Rotate({10, 0}, m_desiredAngle);
-//	DrawLineV(m_pos, Vector2Add(m_pos, forward), BLUE);
-//	DrawLineV(m_pos, Vector2Add(m_pos, dforward), GREEN);
 }
 
 void Ant::StayOnScreen()
@@ -342,6 +342,7 @@ void Ant::StayOnScreen()
 	{
 		m_pos = m_prevPos;
 		TurnBackward();
+		RandomizeAngle(M_PI_4);
 	}
 }
 

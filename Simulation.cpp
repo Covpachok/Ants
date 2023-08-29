@@ -266,6 +266,24 @@ void Simulation::ResetAnts()
 	InitAnts();
 }
 
+void Simulation::ResetCamera()
+{
+	m_camera.rotation = 0;
+	m_camera.zoom     = 1;
+	m_camera.offset   = {0, 0};
+	m_camera.target   = {0, 0};
+}
+
+void HelpTooltip(const std::string &text)
+{
+	ImGui::SameLine();
+	ImGui::TextDisabled("(?)");
+	if ( ImGui::IsItemHovered())
+	{
+		ImGui::SetTooltip(text.c_str());
+	}
+}
+
 void Simulation::ShowGui()
 {
 	ImGuiIO &io = ImGui::GetIO();
@@ -288,6 +306,10 @@ void Simulation::StatisticsGui()
 {
 	ImGui::Begin("Statistics");
 	{
+		ImGui::Value("Ants amount", static_cast<int>(m_ants.size()));
+
+		ImGui::Separator();
+
 		ImGui::Value("Collected food ", m_world.GetCollectedFoodAmount());
 		ImGui::Value("Delivered food ", m_world.GetDeliveredFoodAmount());
 		ImGui::Value("Not delivered  ", m_world.GetCollectedFoodAmount() - m_world.GetDeliveredFoodAmount());
@@ -321,7 +343,6 @@ void Simulation::SettingsGui()
 				World::CellType  paintType = m_brush.GetPaintType();
 
 				ImGui::Text("Press Left Mouse Button to paint");
-
 
 				ImGui::SliderInt("Brush size", &size, 1, 100);
 
@@ -358,8 +379,6 @@ void Simulation::SettingsGui()
 
 		ImGui::SeparatorText("Other");
 
-		ImGui::Checkbox("Show advanced settings", &m_showAdvancedSettings);
-
 		ImGui::Separator();
 
 		if ( ImGui::Button("[R] Restart simulation"))
@@ -372,16 +391,31 @@ void Simulation::SettingsGui()
 			ResetAnts();
 		}
 
+		ImGui::SameLine();
+
 		if ( ImGui::Button("Clear pheromones"))
 		{
 			m_world.ClearPheromones();
 		}
 
-		if ( ImGui::Button("Reset settings values"))
+		ImGui::SameLine();
+
+		if ( ImGui::Button("Clear map"))
 		{
-			m_valueTable.Reset();
+			m_world.ClearMap();
 		}
+
+		if ( ImGui::Button("Reset camera"))
+		{
+			ResetCamera();
+		}
+
+		ImGui::Separator();
+
+		ImGui::Checkbox("Show advanced settings", &m_showAdvancedSettings);
+
 		ImGui::Text("(Some values will change only after simulation restart)");
+
 	}
 	ImGui::End();
 }
@@ -426,29 +460,43 @@ void Simulation::AdvancedSettingsGui()
 			ImGui::ColorEdit4("With food", imguiColor.color);
 			antsValueTable.antWithFoodColor = ColorConvert::Float4ToRayColor(imguiColor.color);
 
+			ImGui::PushItemWidth(200);
+
 			ImGui::SeparatorText("Movement");
 
 			ImGui::InputFloat("Movement speed", &antsValueTable.antMovementSpeed);
 			ImGui::InputFloat("Rotation speed", &antsValueTable.antRotationSpeed);
 
-			ImGui::Separator();
-
-			ImGui::InputFloat("Random angle", &antsValueTable.antRandomAngle);
+			ImGui::SliderFloat("Random angle", &antsValueTable.antRandomAngle, 0.f, 1.f);
+			HelpTooltip("When ants wander, they choose a random angle\n"
+			            "in which to look and move in that direction");
 
 			ImGui::SeparatorText("Perception");
 
 			ImGui::SliderInt("FOV range", &antsValueTable.antFovRange, 2, 16);
+			HelpTooltip("Ants can perceive objects in a cone in front of them,\n"
+			            "this variable affects size of this cone.\n"
+			            "Heavily affects performance");
+
 
 			ImGui::SeparatorText("Pheromones");
 
 			ImGui::InputFloat("Home strength loss", &antsValueTable.homePheromoneStrengthLoss);
 			ImGui::InputFloat("Food strength loss", &antsValueTable.foodPheromoneStrengthLoss);
+			HelpTooltip("Over time, ants lose the strength of their pheromones.\n"
+			            "This variable prevents the ants from going in circles forever\n"
+			            "and also allows them to take shorter paths.");
 
-			ImGui::Separator();
+			ImGui::InputFloat("Home spawn intensity", &antsValueTable.foodPheromoneIntensity);
+			ImGui::InputFloat("Food spawn intensity", &antsValueTable.homePheromoneIntensity);
+			HelpTooltip("Amount of pheromones spawned each time");
 
-			ImGui::InputFloat("Home intensity", &antsValueTable.foodPheromoneIntensity);
-			ImGui::InputFloat("Food intensity", &antsValueTable.homePheromoneIntensity);
+			ImGui::SeparatorText("Other");
 
+			ImGui::InputFloat("Food spawn delay", &antsValueTable.pheromoneSpawnDelay);
+			ImGui::InputInt("Deviation chance", &antsValueTable.deviationChance);
+
+			ImGui::PopItemWidth();
 			ImGui::TreePop();
 		}
 
@@ -467,11 +515,11 @@ void Simulation::AdvancedSettingsGui()
 					ImGuiRlColorEdit4("Food", worldValueTable.cellColors[World::Food]);
 					ImGuiRlColorEdit4("Wall", worldValueTable.cellColors[World::Wall]);
 
-					ImGui::Separator();
-
 					ImGuiRlColorEdit4("Home pheromone", worldValueTable.homePheromoneColor);
 					ImGuiRlColorEdit4("Food pheromone", worldValueTable.foodPheromoneColor);
 				}
+
+				ImGui::PushItemWidth(200);
 
 				ImGui::SeparatorText("Cells");
 
@@ -479,8 +527,8 @@ void Simulation::AdvancedSettingsGui()
 
 				ImGui::SeparatorText("Pheromones");
 
-				ImGui::InputFloat("Home evaporation rate", &worldValueTable.homePheromoneEvaporationRate);
-				ImGui::InputFloat("Food evaporation rate", &worldValueTable.foodPheromoneEvaporationRate);
+				ImGui::SliderFloat("Home evaporation rate", &worldValueTable.homePheromoneEvaporationRate, 0.f, 255.f);
+				ImGui::SliderFloat("Food evaporation rate", &worldValueTable.foodPheromoneEvaporationRate, 0.f, 255.f);
 
 				ImGui::SeparatorText("Home");
 
@@ -493,13 +541,15 @@ void Simulation::AdvancedSettingsGui()
 					ImGui::Checkbox("Choose by mouse click", &m_choosingHomePos);
 				}
 
+				ImGui::PopItemWidth();
+
 				ImGui::TreePop();
 			}
 
-			ImGui::Separator();
-
 			if ( ImGui::TreeNode("Map generation settings"))
 			{
+				ImGui::PushItemWidth(200);
+
 				ImGui::SeparatorText("Generation");
 
 				const char *titles[] = {"None", "Food only", "Walls only", "Food and Walls"};
@@ -509,43 +559,58 @@ void Simulation::AdvancedSettingsGui()
 
 				ImGui::SeparatorText("Noise gen");
 
-				ImGui::SliderFloat("Scale", &worldValueTable.mapGenNoiseScale, 1.f, 128.f);
-				ImGui::SliderInt("Blur", &worldValueTable.mapGenNoiseBlur, 0, 32);
+				ImGui::SliderFloat("Scale", &worldValueTable.mapGenNoiseScale, 1.f, 32.f);
+				HelpTooltip("The larger the scale, the more detailed the noise will be.");
+				ImGui::SliderInt("Blur", &worldValueTable.mapGenNoiseBlur, 0, 8);
+				HelpTooltip("Makes world smoother.");
 
 				ImGui::SeparatorText("Cells thresholds");
 
-				ImGui::SliderInt("Food low", &worldValueTable.mapGenFoodLowThreshold, 0, 255);
-				ImGui::SliderInt("Food high", &worldValueTable.mapGenFoodHighThreshold, 0, 255);
+				ImGui::DragIntRange2("Food spawn range",
+				                     &worldValueTable.mapGenFoodLowThreshold,
+				                     &worldValueTable.mapGenFoodHighThreshold,
+				                     1, 0, worldValueTable.mapGenWallLowThreshold,
+				                     "From: %d", "To: %d");
 
-				ImGui::Separator();
+				ImGui::DragIntRange2("Wall spawn range",
+				                     &worldValueTable.mapGenWallLowThreshold,
+				                     &worldValueTable.mapGenWallHighThreshold,
+				                     1, worldValueTable.mapGenFoodHighThreshold, 255,
+				                     "From: %d", "To: %d");
 
-				ImGui::SliderInt("Wall low", &worldValueTable.mapGenWallLowThreshold, 0, 255);
-				ImGui::SliderInt("Wall high", &worldValueTable.mapGenWallHighThreshold, 0, 255);
+				ImGui::PopItemWidth();
 
 				ImGui::TreePop();
 			}
 		}
 
-		ImGui::SeparatorText("Presets");
+		ImGui::Text(" ");
+
+		ImGui::SeparatorText("OTHER");
+
+		if ( ImGui::TreeNode("Save/Load"))
 		{
-			ImGui::InputText("Save filename", &m_saveFilename);
+			ImGui::PushItemWidth(200);
+
+			ImGui::Text("Filename");
+			ImGui::InputText("", &m_saveFilename);
+
+			ImGui::SameLine();
 
 			if ( ImGui::Button("Save"))
 			{
 				m_valueTable.Save(m_saveFilename);
 			}
 
-			ImGui::Separator();
-
 			static size_t selectedIndex = 0;
 			if ( m_saveFiles.empty())
 			{
-				ImGui::TextDisabled("Not found any json files");
+				ImGui::TextDisabled("Not found any save files");
 			}
 			else
 			{
 				const char *previewValue = m_saveFiles[selectedIndex].c_str();
-				if ( ImGui::BeginCombo("Save files", previewValue))
+				if ( ImGui::BeginCombo("", previewValue))
 				{
 					for ( size_t i = 0; i < m_saveFiles.size(); ++i )
 					{
@@ -555,8 +620,6 @@ void Simulation::AdvancedSettingsGui()
 							selectedIndex = i;
 						}
 
-						// Set the initial focus when opening the combo
-						// (scrolling + keyboard navigation focus)
 						if ( isSelected )
 						{
 							ImGui::SetItemDefaultFocus();
@@ -568,16 +631,30 @@ void Simulation::AdvancedSettingsGui()
 
 			ImGui::SameLine();
 
+			if ( ImGui::Button("Load"))
+			{
+				m_valueTable.Load(m_saveFiles[selectedIndex]);
+			}
+
+			ImGui::SameLine();
+
 			if ( ImGui::Button("Update list"))
 			{
 				FindSaveFiles();
 			}
 
-			if ( ImGui::Button("Load"))
-			{
-				m_valueTable.Load(m_saveFiles[selectedIndex]);
-			}
+			ImGui::PopItemWidth();
+			ImGui::TreePop();
 		}
+
+		ImGui::Text(" ");
+		ImGui::Separator();
+
+		if ( ImGui::Button("Reset settings values"))
+		{
+			m_valueTable.Reset();
+		}
+
 	}
 	ImGui::End();
 }

@@ -28,6 +28,7 @@ private:
 
 	void Reset();
 	void ResetAnts();
+	void ResetCamera();
 
 	void ShowGui();
 	void StatisticsGui();
