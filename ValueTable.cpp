@@ -38,6 +38,8 @@ void ValueTable::Save(const std::string &filename)
 
 	j["antsValueTable"]["pheromoneSpawnDelay"] = m_antsTable.pheromoneSpawnDelay;
 
+	j["antsValueTable"]["deviationChance"] = m_antsTable.deviationChance;
+
 	j["antsValueTable"]["antDefaultColor"]  = RayColorToJson(m_antsTable.antDefaultColor);
 	j["antsValueTable"]["antWithFoodColor"] = RayColorToJson(m_antsTable.antWithFoodColor);
 
@@ -60,8 +62,9 @@ void ValueTable::Save(const std::string &filename)
 
 	j["worldValueTable"]["antsAmount"] = m_worldTable.antsAmount;
 
-	j["worldValueTable"]["mapGenNoiseScale"] = m_worldTable.mapGenNoiseScale;
-	j["worldValueTable"]["mapGenNoiseBlur"]  = m_worldTable.mapGenNoiseBlur;
+	j["worldValueTable"]["mapGenNoiseScale"]    = m_worldTable.mapGenNoiseScale;
+	j["worldValueTable"]["mapGenNoiseBlur"]     = m_worldTable.mapGenNoiseBlur;
+	j["worldValueTable"]["mapGenNoiseContrast"] = m_worldTable.mapGenNoiseContrast;
 
 	j["worldValueTable"]["mapGenSettings"] = m_worldTable.mapGenSettings;
 
@@ -105,6 +108,7 @@ void ValueTable::Load(const std::string &filename)
 	m_antsTable.homePheromoneIntensity = data["antsValueTable"]["homePheromoneIntensity"];
 
 	m_antsTable.pheromoneSpawnDelay = data["antsValueTable"]["pheromoneSpawnDelay"];
+	m_antsTable.deviationChance     = data["antsValueTable"]["deviationChance"];
 
 	m_antsTable.antDefaultColor  = JsonToRayColor(data["antsValueTable"]["antDefaultColor"]);
 	m_antsTable.antWithFoodColor = JsonToRayColor(data["antsValueTable"]["antWithFoodColor"]);
@@ -131,8 +135,9 @@ void ValueTable::Load(const std::string &filename)
 
 	m_worldTable.antsAmount = data["worldValueTable"]["antsAmount"];
 
-	m_worldTable.mapGenNoiseScale = data["worldValueTable"]["mapGenNoiseScale"];
-	m_worldTable.mapGenNoiseBlur  = data["worldValueTable"]["mapGenNoiseBlur"];
+	m_worldTable.mapGenNoiseScale    = data["worldValueTable"]["mapGenNoiseScale"];
+	m_worldTable.mapGenNoiseBlur     = data["worldValueTable"]["mapGenNoiseBlur"];
+	m_worldTable.mapGenNoiseContrast = data["worldValueTable"]["mapGenNoiseContrast"];
 
 	m_worldTable.mapGenSettings = data["worldValueTable"]["mapGenSettings"];
 

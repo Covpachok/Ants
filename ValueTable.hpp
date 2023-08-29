@@ -57,8 +57,9 @@ struct WorldValueTable
 	int antsAmount = 1000;
 
 //	bool  shouldGenerateMap = true;
-	float mapGenNoiseScale = 8.f;
-	int   mapGenNoiseBlur  = 2;
+	float mapGenNoiseScale    = 8.f;
+	int   mapGenNoiseBlur     = 2;
+	int   mapGenNoiseContrast = 8;
 
 	MapGenSettings mapGenSettings = MapGenSettings::FoodAndWalls;
 

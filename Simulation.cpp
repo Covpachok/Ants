@@ -561,22 +561,23 @@ void Simulation::AdvancedSettingsGui()
 
 				ImGui::SliderFloat("Scale", &worldValueTable.mapGenNoiseScale, 1.f, 32.f);
 				HelpTooltip("The larger the scale, the more detailed the noise will be.");
-				ImGui::SliderInt("Blur", &worldValueTable.mapGenNoiseBlur, 0, 8);
+				ImGui::SliderInt("Blur", &worldValueTable.mapGenNoiseBlur, 1, 8);
 				HelpTooltip("Makes world smoother.");
+				ImGui::SliderInt("Contrast", &worldValueTable.mapGenNoiseContrast, 1, 128);
 
 				ImGui::SeparatorText("Cells thresholds");
 
 				ImGui::DragIntRange2("Food spawn range",
 				                     &worldValueTable.mapGenFoodLowThreshold,
 				                     &worldValueTable.mapGenFoodHighThreshold,
-				                     1, 0, worldValueTable.mapGenWallLowThreshold,
-				                     "From: %d", "To: %d");
+				                     1, 0, 255,
+				                     "From: %d", "To: %d", ImGuiSliderFlags_AlwaysClamp);
 
 				ImGui::DragIntRange2("Wall spawn range",
 				                     &worldValueTable.mapGenWallLowThreshold,
 				                     &worldValueTable.mapGenWallHighThreshold,
-				                     1, worldValueTable.mapGenFoodHighThreshold, 255,
-				                     "From: %d", "To: %d");
+				                     1, 0, 255,
+				                     "From: %d", "To: %d", ImGuiSliderFlags_AlwaysClamp);
 
 				ImGui::PopItemWidth();
 

@@ -245,7 +245,7 @@ void World::ClearPheromones()
 	for ( int y = 0; y < m_height; ++y )
 	{
 		const int rowIndex = y * m_width;
-		for ( int x = 0; x < m_width; ++x )
+		for ( int x        = 0; x < m_width; ++x )
 		{
 			m_homePheromoneMap[y][x] = 0;
 			m_foodPheromoneMap[y][x] = 0;
@@ -290,6 +290,7 @@ void World::Draw(bool h, bool f) const
 	}
 
 	DrawCircleSector(m_screenHomePos, m_screenHomeRadius, 0.f, 360.f, 18, m_homeColor);
+//	DrawTexturePro(TEST_NOISE, src, dest, {0, 0}, 0, WHITE);
 }
 
 void World::Erase()
@@ -369,10 +370,14 @@ void World::GenerateMap()
 			return;
 	}
 
-	Image noiseImage = GenImagePerlinNoise(m_width, m_height, GetRandomValue(-1000, 1000),
+	Image noiseImage = GenImagePerlinNoise(m_width, m_width, GetRandomValue(-1000, 1000),
 	                                       GetRandomValue(-1000, 1000), m_valueTable->mapGenNoiseScale);
+	ImageResizeCanvas(&noiseImage, m_width, m_height, 0, 0, BLACK);
+//	Image noiseImage   = GenImageCellular(m_width, m_height, static_cast<int>(m_valueTable->mapGenNoiseScale));
 	ImageBlurGaussian(&noiseImage, m_valueTable->mapGenNoiseBlur);
+	ImageColorContrast(&noiseImage, m_valueTable->mapGenNoiseContrast);
 	Color *noiseColors = LoadImageColors(noiseImage);
+
 	UnloadImage(noiseImage);
 
 	for ( int y = 0; y < m_height; ++y )
