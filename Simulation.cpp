@@ -48,7 +48,7 @@ Simulation::~Simulation()
 
 void Simulation::Init()
 {
-	m_world.Init(k_screenWidth / 3, k_screenHeight / 3, m_valueTable.GetWorldTable());
+	m_world.Init(k_screenWidth / 2, k_screenHeight / 2, m_valueTable.GetWorldTable());
 	InitAnts();
 }
 
@@ -90,8 +90,8 @@ void Simulation::HandleInput()
 			if ( m_world.IsInBounds(worldPos))
 			{
 				auto homePosRef = m_valueTable.GetMutableWorldTable().homePos;
-				homePosRef[0] = worldPos.first;
-				homePosRef[1] = worldPos.second;
+				homePosRef[0] = worldPos.x;
+				homePosRef[1] = worldPos.y;
 
 				m_choosingHomePos = false;
 			}
@@ -118,7 +118,7 @@ void Simulation::HandleInput()
 	{
 		auto pos = m_world.ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
 
-		m_brush.Paint(m_world, pos.first, pos.second);
+		m_brush.Paint(m_world, pos.x, pos.y);
 	}
 
 	if ( IsKeyPressed(KEY_SPACE))
@@ -195,7 +195,7 @@ void Simulation::Update()
 		}
 		else if ( fps > 60 )
 		{
-			m_gameSpeed = std::min(m_gameSpeed + 0.1f * k_fixedTimestep, 20.f);
+			m_gameSpeed = std::min(m_gameSpeed + 0.05f * k_fixedTimestep, 20.f);
 		}
 	}
 
@@ -494,7 +494,7 @@ void Simulation::AdvancedSettingsGui()
 			ImGui::SeparatorText("Other");
 
 			ImGui::InputFloat("Food spawn delay", &antsValueTable.pheromoneSpawnDelay);
-			ImGui::InputInt("Deviation chance", &antsValueTable.deviationChance);
+			ImGui::InputFloat("Deviation chance", &antsValueTable.deviationChance);
 
 			ImGui::PopItemWidth();
 			ImGui::TreePop();
@@ -563,7 +563,7 @@ void Simulation::AdvancedSettingsGui()
 				HelpTooltip("The larger the scale, the more detailed the noise will be.");
 				ImGui::SliderInt("Blur", &worldValueTable.mapGenNoiseBlur, 1, 8);
 				HelpTooltip("Makes world smoother.");
-				ImGui::SliderInt("Contrast", &worldValueTable.mapGenNoiseContrast, 1, 128);
+				ImGui::SliderFloat("Contrast", &worldValueTable.mapGenNoiseContrast, 1.f, 128.f);
 
 				ImGui::SeparatorText("Cells thresholds");
 

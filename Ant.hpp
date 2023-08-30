@@ -2,9 +2,11 @@
 #define ANTS_ANT_HPP
 
 #include <cmath>
-
 #include <raylib.h>
+
 #include "ValueTable.hpp"
+#include "IntVec.hpp"
+#include "Timer.hpp"
 
 class World;
 
@@ -65,17 +67,17 @@ private:
 	float m_homeStrength = 1;
 	float m_foodStrength = 0;
 
-	float m_lastPheromoneSpawnTime = 0;
-	float m_lastFovCheckTime       = 0;
+	Timer m_pheromoneSpawnTimer;
+	Timer m_fovCheckTimer;
+	Timer m_deviationTimer;
 
 	bool m_gotFood            = false;
 	bool m_shouldDecreaseCell = false;
 	bool m_deliveredFood      = false;
 
 	bool  m_ignorePheromones  = false;
-	float m_lastDeviationTime = 0;
 
-	std::pair<int, int> m_cellToDecreasePos;
+	IntVec2 m_cellToDecreasePos;
 };
 
 

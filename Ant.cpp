@@ -1,8 +1,7 @@
-#include <random>
-
 #include "Ant.hpp"
 #include "World.hpp"
 #include "ValueTable.hpp"
+#include "Random.hpp"
 
 #include "omp.h"
 
@@ -24,35 +23,40 @@ void Ant::Init(float startX, float startY, const AntsValueTable &valueTable)
 
 	m_pos          = {startX, startY};
 	m_prevPos      = m_pos;
-	m_angle        = static_cast<float>(GetRandomValue(M_PI * -100, M_PI * 100)) / 100.f;
+	m_angle        = g_random.GenerateReal(-M_PI, M_PI);
+//	m_angle        = static_cast<float>(GetRandomValue(M_PI * -100, M_PI * 100)) / 100.f;
 	m_desiredAngle = m_angle;
 
 	m_colorsPtr[0] = &m_valueTable->antDefaultColor;
 	m_colorsPtr[1] = &m_valueTable->antWithFoodColor;
+
+	m_pheromoneSpawnTimer.SetDelay(m_valueTable->pheromoneSpawnDelay);
+	m_fovCheckTimer.SetDelay(k_antFovCheckDelay);
+	m_deviationTimer.SetDelay(1.f);
 }
 
 void Ant::Update(const float delta, const World &world)
 {
-	m_lastPheromoneSpawnTime += delta;
-	m_lastFovCheckTime += delta;
-	m_lastDeviationTime += delta;
+	m_pheromoneSpawnTimer.Update(delta);
+	m_fovCheckTimer.Update(delta);
+	m_deviationTimer.Update(delta);
 
-	if ( GetRandomValue(0, 10000) <= m_valueTable->deviationChance )
+	if ( g_random.GenerateBool(m_valueTable->deviationChance))
 	{
-		m_ignorePheromones  = true;
-		m_lastDeviationTime = 0;
+		m_ignorePheromones = true;
+		m_deviationTimer.Reset();
 	}
 
-	if ( m_lastDeviationTime >= 1.f )
+	if ( m_deviationTimer.IsElapsed())
 	{
 		m_ignorePheromones = false;
 	}
 
 	CheckCollisions(world);
-	if ( m_lastFovCheckTime > k_antFovCheckDelay )
+	if ( m_fovCheckTimer.IsElapsed())
 	{
 		CheckInFov(world);
-		m_lastFovCheckTime = 0;
+		m_fovCheckTimer.Reset();
 	}
 
 	m_foodStrength = std::max(m_foodStrength - delta * m_valueTable->foodPheromoneStrengthLoss, 0.f);
@@ -64,21 +68,21 @@ void Ant::Update(const float delta, const World &world)
 
 void Ant::PostUpdate(const float delta, World &world)
 {
-	if ( m_lastPheromoneSpawnTime > m_valueTable->pheromoneSpawnDelay )
+	if ( m_pheromoneSpawnTimer.IsElapsed())
 	{
 		SpawnPheromone(world);
-		m_lastPheromoneSpawnTime = 0;
+		m_pheromoneSpawnTimer.Reset();
 	}
 
 	if ( m_shouldDecreaseCell )
 	{
-		if ( world.GetCell(m_cellToDecreasePos.first, m_cellToDecreasePos.second).type == World::Food )
+		if ( world.GetCell(m_cellToDecreasePos.x, m_cellToDecreasePos.y).type == World::Food )
 		{
 			m_gotFood = true;
 		}
 
 		m_shouldDecreaseCell = false;
-		world.DecreaseCell(m_cellToDecreasePos.first, m_cellToDecreasePos.second);
+		world.DecreaseCell(m_cellToDecreasePos.x, m_cellToDecreasePos.y);
 	}
 
 	if ( m_deliveredFood )
@@ -102,11 +106,11 @@ void Ant::Move(float delta)
 
 void Ant::Rotate(float delta)
 {
-	static std::random_device                    rd;
-	static std::mt19937                          gen(rd());
-	static std::uniform_real_distribution<float> def(-1.f, 1.f);
+//	static std::random_device                    rd;
+//	static std::mt19937                          gen(rd());
+//	static std::uniform_real_distribution<float> def(-1.f, 1.f);
 
-	const float randomAngle = def(gen) * m_valueTable->antRandomAngle;
+	const float randomAngle = g_random.GenerateReal(-1.f, 1.f) * m_valueTable->antRandomAngle;
 
 	m_desiredAngle += randomAngle;
 
@@ -122,11 +126,11 @@ void Ant::SpawnPheromone(World &world)
 
 	if ( m_gotFood )
 	{
-		world.AddFoodPheromone(pos.first, pos.second, m_valueTable->foodPheromoneIntensity * m_foodStrength);
+		world.AddFoodPheromone(pos.x, pos.y, m_valueTable->foodPheromoneIntensity * m_foodStrength);
 	}
 	else
 	{
-		world.AddHomePheromone(pos.first, pos.second, m_valueTable->homePheromoneIntensity * m_homeStrength);
+		world.AddHomePheromone(pos.x, pos.y, m_valueTable->homePheromoneIntensity * m_homeStrength);
 	}
 }
 
@@ -150,7 +154,7 @@ void Ant::CheckCollisions(const World &world)
 
 	/* Food collision */
 	const auto checkMapPos = world.ScreenToWorld(m_pos.x, m_pos.y);
-	auto       cellType    = world.GetCell(checkMapPos.first, checkMapPos.second).type;
+	auto       cellType    = world.GetCell(checkMapPos.x, checkMapPos.y).type;
 	if ( cellType == World::Food )
 	{
 		m_pos = m_prevPos;
@@ -172,7 +176,7 @@ void Ant::CheckCollisions(const World &world)
 		m_pos = m_prevPos;
 
 		const auto prevMapPos   = world.ScreenToWorld(m_prevPos.x, m_prevPos.y);
-		auto       prevCellType = world.GetCell(prevMapPos.first, prevMapPos.second).type;
+		auto       prevCellType = world.GetCell(prevMapPos.x, prevMapPos.y).type;
 
 		if ( prevCellType == World::Wall )
 		{
@@ -185,6 +189,7 @@ void Ant::CheckCollisions(const World &world)
 
 void Ant::CheckInFov(const World &world)
 {
+	// Caching angles to improve performance
 	float     checkAngles[3][2];
 	for ( int i = -1; i <= 1; ++i )
 	{
@@ -227,20 +232,22 @@ void Ant::CheckInFov(const World &world)
 	double strongestPheromone = 0;
 	double checkedPheromone   = 0;
 
-	bool foundThing = false;
-	int  prevSide   = 0;
-	int  turnSide   = 0;
+	bool foundObject    = false;
+	bool foundPheromone = false;
+
+	int prevSide = 0;
+	int turnSide = 0;
 
 	World::CellType cellType = World::None;
 
 	float screenToMapRatio = world.GetScreenToWorldRatio();
 
-	for ( int j = 1; j <= m_valueTable->antFovRange && !foundThing; ++j )
+	for ( int j = 1; j <= m_valueTable->antFovRange && !foundObject; ++j )
 	{
-		const float multiplier = screenToMapRatio * j;
+		const float multiplier = screenToMapRatio * static_cast<float>(j);
 		for ( int   i          = -j / 2 - 1; i <= j / 2 + 1; ++i )
 		{
-			foundThing = false;
+			foundObject = false;
 			// -1 left; 0 forward; 1 right
 			int side = ( i > 0 ) - ( i < 0 );
 
@@ -248,18 +255,25 @@ void Ant::CheckInFov(const World &world)
 			checkPos.y = m_pos.y + checkAngles[side + 1][1] * multiplier;
 
 			const auto checkMapPos = world.ScreenToWorld(checkPos.x, checkPos.y);
-			cellType = world.GetCell(checkMapPos.first, checkMapPos.second).type;
+			if ( !world.IsInBounds(checkMapPos))
+			{
+				continue;
+			}
 
+			cellType = world.UnsafeGetCell(checkMapPos.x, checkMapPos.y).type;
+
+			// Avoid walls if they are close
 			if ( cellType == World::Wall && j < 3 )
 			{
-				turnSide   = -side;
-				foundThing = true;
+				turnSide    = -side;
+				foundObject = true;
 				break;
 			}
+				// Go for the food
 			else if ( cellType == World::Food && !m_gotFood )
 			{
-				turnSide   = side;
-				foundThing = true;
+				turnSide    = side;
+				foundObject = true;
 				break;
 			}
 
@@ -268,20 +282,24 @@ void Ant::CheckInFov(const World &world)
 				continue;
 			}
 
+			// Look for home pheromones if ant have food
 			if ( m_gotFood )
 			{
-				checkedPheromone = world.GetHomePheromone(checkMapPos.first, checkMapPos.second);
+				checkedPheromone = world.UnsafeGetHomePheromone(checkMapPos.x, checkMapPos.y);
 			}
+				// Look for food pheromones if ant doesn't have food
 			else
 			{
-				checkedPheromone = world.GetFoodPheromone(checkMapPos.first, checkMapPos.second);
+				checkedPheromone = world.UnsafeGetFoodPheromone(checkMapPos.x, checkMapPos.y);
 			}
 
 			if ( checkedPheromone > strongestPheromone )
 			{
 				strongestPheromone = checkedPheromone;
 				turnSide           = side;
+				foundPheromone     = true;
 			}
+				// Fixes ants going left when they have spotted two strong pheromones
 			else if ( checkedPheromone == strongestPheromone )
 			{
 				turnSide = ( side == 0 || prevSide == 0 ) ? 0 : side;
@@ -291,7 +309,7 @@ void Ant::CheckInFov(const World &world)
 		}
 	}
 
-	if ( strongestPheromone > 0.01 || foundThing )
+	if ( foundPheromone || foundObject )
 	{
 		m_desiredAngle = m_angle + turnSide * M_PI_4;
 	}
@@ -349,10 +367,12 @@ void Ant::StayOnScreen()
 void Ant::RandomizeAngle(float pi)
 {
 	// TODO: Replace GetRandomValue to c++ random functions
-	m_angle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.f;
+//	m_angle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.f;
+	m_angle += ( pi * g_random.GenerateReal(-1.f, 1.f));
 }
 
 void Ant::RandomizeDesiredAngle(float pi)
 {
-	m_desiredAngle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.f;
+//	m_desiredAngle += ( pi * static_cast<float>(GetRandomValue(-100, 100))) / 100.f;
+	m_desiredAngle += ( pi * g_random.GenerateReal(-1.f, 1.f));
 }

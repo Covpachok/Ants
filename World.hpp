@@ -9,6 +9,7 @@
 #include "raylib.h"
 #include "rlgl.h"
 #include "ValueTable.hpp"
+#include "IntVec.hpp"
 
 class World
 {
@@ -20,7 +21,7 @@ public:
 
 	struct Cell
 	{
-		CellType type = None;
+		CellType type   = None;
 		int      amount = 0;
 	};
 
@@ -50,19 +51,34 @@ public:
 		return IsInBounds(x, y) ? m_homePheromoneMap[y][x] : 0;
 	}
 
+	inline double UnsafeGetFoodPheromone(int x, int y) const
+	{
+		return m_foodPheromoneMap[y][x];
+	}
+
+	inline double UnsafeGetHomePheromone(int x, int y) const
+	{
+		return m_homePheromoneMap[y][x];
+	}
+
 	inline const Cell &GetCell(int x, int y) const
 	{
 		return IsInBounds(x, y) ? m_worldMap[y][x] : m_worldMap[0][0];
 	}
 
+	inline const Cell &UnsafeGetCell(int x, int y) const
+	{
+		return m_worldMap[y][x];
+	}
+
 	void Draw(bool h = true, bool f = true) const;
 
-	inline std::pair<int, int> ScreenToWorld(float x, float y) const
+	inline IntVec2 ScreenToWorld(float x, float y) const
 	{
 		return {x * m_screenToWorldInverseRatio, y * m_screenToWorldInverseRatio};
 	}
 
-	inline std::pair<int, int> ScreenToWorld(Vector2 pos) const
+	inline IntVec2 ScreenToWorld(Vector2 pos) const
 	{
 		return ScreenToWorld(pos.x, pos.y);
 	}
@@ -79,7 +95,7 @@ public:
 	inline float GetScreenHomeRadius() const { return m_screenHomeRadius; }
 
 	inline bool IsInBounds(int x, int y) const { return x >= 0 && x < m_width && y >= 0 && y < m_height; }
-	inline bool IsInBounds(std::pair<int, int> pos) const { return IsInBounds(pos.first, pos.second); }
+	inline bool IsInBounds(IntVec2 pos) const { return IsInBounds(pos.x, pos.y); }
 
 	void Reset(int width, int height);
 	void Erase();
@@ -110,7 +126,6 @@ private:
 
 	Cell **m_worldMap;
 
-	Image   m_worldImage;
 	Texture m_worldTexture;
 	Color   *m_worldColorMap;
 
@@ -120,17 +135,18 @@ private:
 	double **m_homePheromoneMap;
 	double **m_foodPheromoneMap;
 
-	Image   m_homePheromoneImage{};
 	Texture m_homePheromoneTexture{};
 	Color   *m_homePheromoneColorMap;
 
-	Image   m_foodPheromoneImage{};
 	Texture m_foodPheromoneTexture{};
 	Color   *m_foodPheromoneColorMap;
 
+	Texture m_pheromoneTexture{};
+	Color   *m_pheromoneColorMap;
+
 	// -------------
 
-	std::pair<int, int> m_homePos;
+	IntVec2 m_homePos;
 	int                 m_homeRadius;
 
 	Vector2 m_screenHomePos;
@@ -148,7 +164,7 @@ private:
 	int m_totalFoodAmount     = 0;
 	int m_remainingFoodAmount = 0;
 
-	std::vector<std::pair<int, int>> m_homeCellPositions;
+	std::vector<IntVec2> m_homeCellPositions;
 };
 
 

@@ -1,9 +1,10 @@
-#include <algorithm>
-
 #include "World.hpp"
 
-#include "omp.h"
+#include <algorithm>
 #include <raymath.h>
+
+#include "Random.hpp"
+#include "omp.h"
 
 void World::Init(int width, int height, const WorldValueTable &valueTable)
 {
@@ -40,21 +41,25 @@ void World::Init(int width, int height, const WorldValueTable &valueTable)
 	}
 	// -------------
 
-	m_homePheromoneImage    = GenImageColor(m_width, m_height, m_valueTable->homePheromoneColor);
-	m_homePheromoneTexture  = LoadTextureFromImage(m_homePheromoneImage);
-	m_homePheromoneColorMap = LoadImageColors(m_homePheromoneImage);
+	Image image;
 
-	m_foodPheromoneImage    = GenImageColor(m_width, m_height, m_valueTable->foodPheromoneColor);
-	m_foodPheromoneTexture  = LoadTextureFromImage(m_foodPheromoneImage);
-	m_foodPheromoneColorMap = LoadImageColors(m_foodPheromoneImage);
+	image                   = GenImageColor(m_width, m_height, m_valueTable->homePheromoneColor);
+	m_homePheromoneTexture  = LoadTextureFromImage(image);
+	m_homePheromoneColorMap = LoadImageColors(image);
 
-	m_worldImage    = GenImageColor(m_width, m_height, BLACK);
-	m_worldTexture  = LoadTextureFromImage(m_worldImage);
-	m_worldColorMap = LoadImageColors(m_worldImage);
+	image                   = GenImageColor(m_width, m_height, m_valueTable->foodPheromoneColor);
+	m_foodPheromoneTexture  = LoadTextureFromImage(image);
+	m_foodPheromoneColorMap = LoadImageColors(image);
 
-	UnloadImage(m_homePheromoneImage);
-	UnloadImage(m_foodPheromoneImage);
-	UnloadImage(m_worldImage);
+	image           = GenImageColor(m_width, m_height, BLACK);
+	m_worldTexture  = LoadTextureFromImage(image);
+	m_worldColorMap = LoadImageColors(image);
+
+	image               = GenImageColor(m_width, m_height, {0, 0, 0, 255});
+	m_pheromoneTexture  = LoadTextureFromImage(image);
+	m_pheromoneColorMap = LoadImageColors(image);
+
+	UnloadImage(image);
 
 	// -------------
 
@@ -84,8 +89,8 @@ void World::Init(int width, int height, const WorldValueTable &valueTable)
 		m_homePos = {m_valueTable->homePos[0], m_valueTable->homePos[1]};
 	}
 
-	m_screenHomePos    = {static_cast<float>(m_homePos.first) * m_screenToWorldRatio,
-	                      static_cast<float>(m_homePos.second) * m_screenToWorldRatio};
+	m_screenHomePos    = {static_cast<float>(m_homePos.x) * m_screenToWorldRatio,
+	                      static_cast<float>(m_homePos.y) * m_screenToWorldRatio};
 	m_screenHomeRadius = static_cast<float>(m_homeRadius) * m_screenToWorldRatio;
 
 	for ( int y = -m_homeRadius; y < m_homeRadius; ++y )
@@ -94,7 +99,7 @@ void World::Init(int width, int height, const WorldValueTable &valueTable)
 		{
 			if ( x * x + y * y <= m_homeRadius * m_homeRadius )
 			{
-				m_homeCellPositions.emplace_back(m_homePos.first + x, m_homePos.second + y);
+				m_homeCellPositions.emplace_back(m_homePos.x + x, m_homePos.y + y);
 			}
 		}
 	}
@@ -116,7 +121,7 @@ void World::Update(double delta)
 {
 	for ( auto &pos: m_homeCellPositions )
 	{
-		m_homePheromoneMap[pos.second][pos.first] = 9998;
+		m_homePheromoneMap[pos.y][pos.x] = 9998;
 	}
 
 #if 0
@@ -152,14 +157,10 @@ void World::Update(double delta)
 			foodPheromone = std::max(foodPheromone - foodEvapRate, 0.0);
 
 			const int index = rowIndex + x;
-			m_homePheromoneColorMap[index].a = static_cast<unsigned char>(std::min(homePheromone, 255.0));
-			m_foodPheromoneColorMap[index].a = static_cast<unsigned char>(std::min(foodPheromone, 255.0));
+			m_homePheromoneColorMap[index].a = static_cast<unsigned char>(homePheromone);
+			m_foodPheromoneColorMap[index].a = static_cast<unsigned char>(foodPheromone);
 		}
 	}
-
-
-	UpdateTexture(m_homePheromoneTexture, m_homePheromoneColorMap);
-	UpdateTexture(m_foodPheromoneTexture, m_foodPheromoneColorMap);
 }
 
 void World::SetCell(int x, int y, CellType type)
@@ -277,15 +278,18 @@ void World::ClearMap()
 
 void World::Draw(bool h, bool f) const
 {
-	Rectangle src  = {0, 0, (float) m_width, (float) m_height};
-	Rectangle dest = {0, 0, (float) GetScreenWidth(), (float) GetScreenHeight()};
+	static const Rectangle src  = {0, 0, (float) m_width, (float) m_height};
+	static const Rectangle dest = {0, 0, (float) GetScreenWidth(), (float) GetScreenHeight()};
+
 	DrawTexturePro(m_worldTexture, src, dest, {0, 0}, 0, WHITE);
 	if ( h )
 	{
+		UpdateTexture(m_homePheromoneTexture, m_homePheromoneColorMap);
 		DrawTexturePro(m_homePheromoneTexture, src, dest, {0, 0}, 0, WHITE);
 	}
 	if ( f )
 	{
+		UpdateTexture(m_foodPheromoneTexture, m_foodPheromoneColorMap);
 		DrawTexturePro(m_foodPheromoneTexture, src, dest, {0, 0}, 0, WHITE);
 	}
 
@@ -370,8 +374,8 @@ void World::GenerateMap()
 			return;
 	}
 
-	Image noiseImage = GenImagePerlinNoise(m_width, m_width, GetRandomValue(-1000, 1000),
-	                                       GetRandomValue(-1000, 1000), m_valueTable->mapGenNoiseScale);
+	Image noiseImage = GenImagePerlinNoise(m_width, m_width, g_random.GenerateInt(-10000, 10000),
+	                                       g_random.GenerateInt(-10000, 10000), m_valueTable->mapGenNoiseScale);
 	ImageResizeCanvas(&noiseImage, m_width, m_height, 0, 0, BLACK);
 //	Image noiseImage   = GenImageCellular(m_width, m_height, static_cast<int>(m_valueTable->mapGenNoiseScale));
 	ImageBlurGaussian(&noiseImage, m_valueTable->mapGenNoiseBlur);
@@ -385,8 +389,8 @@ void World::GenerateMap()
 		const int rowIndex = y * m_width;
 		for ( int x        = 0; x < m_width; ++x )
 		{
-			const int dx = x - m_homePos.first;
-			const int dy = y - m_homePos.second;
+			const int dx = x - m_homePos.x;
+			const int dy = y - m_homePos.y;
 			if ( dx * dx + dy * dy <= m_homeRadius * m_homeRadius * 10 )
 			{
 				continue;

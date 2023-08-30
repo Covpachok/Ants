@@ -15,14 +15,16 @@ set(IMGUI_SOURCES
         ${IMGUI_FOLDER}/imgui_tables.cpp
         ${IMGUI_FOLDER}/misc/cpp/imgui_stdlib.cpp
         libs/rlImGui/rlImGui.cpp
-        Brush.hpp Brush.cpp ValueTable.cpp)
+        )
+
+find_package(OpenMP)
 
 add_subdirectory(libs/raylib)
 include_directories(${IMGUI_FOLDER})
 include_directories(libs/rlImGui)
 include_directories(libs)
 
-add_executable(${PROJECT_NAME} main.cpp ${IMGUI_SOURCES} Ant.cpp Ant.hpp World.cpp World.hpp Simulation.cpp Simulation.hpp ValueTable.hpp ColorConvert.hpp)
+add_executable(${PROJECT_NAME} main.cpp ${IMGUI_SOURCES} Ant.cpp Ant.hpp World.cpp World.hpp Simulation.cpp Simulation.hpp ValueTable.hpp ColorConvert.hpp IntVec.hpp Timer.hpp Random.hpp Brush.hpp Brush.cpp ValueTable.cpp)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib -static gcc stdc++ winpthread -dynamic ${OpenMP_CXX_FLAGS})

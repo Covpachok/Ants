@@ -10,7 +10,7 @@ constexpr int k_cellsAmount = 3;
 struct AntsValueTable
 {
 	float antMovementSpeed = 40;
-	float antRotationSpeed = 7;
+	float antRotationSpeed = 10;
 
 	float antRandomAngle = 0.3;
 	int   antFovRange    = 12;
@@ -23,7 +23,7 @@ struct AntsValueTable
 
 	float pheromoneSpawnDelay = 0.25f;
 
-	int deviationChance = 2;
+	float deviationChance = 0.001;
 
 	Color antDefaultColor  = {128, 128, 255, 128};
 	Color antWithFoodColor = {128, 255, 128, 128};
@@ -59,7 +59,7 @@ struct WorldValueTable
 //	bool  shouldGenerateMap = true;
 	float mapGenNoiseScale    = 8.f;
 	int   mapGenNoiseBlur     = 2;
-	int   mapGenNoiseContrast = 8;
+	float mapGenNoiseContrast = 8;
 
 	MapGenSettings mapGenSettings = MapGenSettings::FoodAndWalls;
 
