@@ -13,7 +13,7 @@ public:
 	};
 
 public:
-	explicit Brush(World::CellType paintType = World::Food, BrushType brushType = Round, int brushSize = 5) :
+	explicit Brush(World::TileType paintType = World::Food, BrushType brushType = Round, int brushSize = 5) :
 			m_paintType(paintType), m_brushType(brushType), m_brushSize(brushSize)
 	{
 		OnBrushChanged();
@@ -21,11 +21,11 @@ public:
 
 	void Paint(World &world, int x, int y);
 
-	void SetPaintType(World::CellType type) { m_paintType = type; }
+	void SetPaintType(World::TileType type) { m_paintType = type; }
 	void SetBrushType(BrushType type) { m_brushType = type; OnBrushChanged(); };
 	void SetBrushSize(int size) { m_brushSize = size; }
 
-	World::CellType GetPaintType() const { return m_paintType; }
+	World::TileType GetPaintType() const { return m_paintType; }
 	BrushType GetBrushType() const { return m_brushType; }
 	int GetBrushSize() const { return m_brushSize; }
 
@@ -33,7 +33,7 @@ private:
 	void OnBrushChanged();
 
 private:
-	World::CellType m_paintType;
+	World::TileType m_paintType;
 	BrushType       m_brushType;
 
 	int m_brushSize;

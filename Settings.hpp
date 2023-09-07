@@ -1,19 +1,20 @@
-#ifndef ANTS_VALUETABLE_HPP
-#define ANTS_VALUETABLE_HPP
+#ifndef ANTS_SETTINGS_HPP
+#define ANTS_SETTINGS_HPP
 
 #include <raylib.h>
 #include <cassert>
 #include <string>
+#include <vector>
 
-constexpr int k_cellsAmount = 3;
+constexpr int k_tilesAmount = 3;
 
-struct AntsValueTable
+struct AntsSettings
 {
 	float antMovementSpeed = 40;
 	float antRotationSpeed = 10;
 
-	float antRandomAngle = 0.3;
-	int   antFovRange    = 12;
+	float antRandomRotation = 0.3;
+	int   antFovRange       = 12;
 
 	float foodPheromoneStrengthLoss = 0.005;
 	float homePheromoneStrengthLoss = 0.005;
@@ -29,8 +30,12 @@ struct AntsValueTable
 	Color antWithFoodColor = {128, 255, 128, 128};
 };
 
-struct WorldValueTable
+struct WorldSettings
 {
+	int mapWidth  = 800;
+	int mapHeight = 100;
+	float screenToMapRatio = 3.f;
+
 	enum MapGenSettings
 	{
 		None, FoodOnly, WallsOnly, FoodAndWalls, Amount
@@ -39,15 +44,15 @@ struct WorldValueTable
 	Color foodPheromoneColor = {0, 255, 0, 0};
 	Color homePheromoneColor = {0, 0, 255, 0};
 
-	Color cellColors[k_cellsAmount] = {{0,   0,   0,   255},
+	Color tileColors[k_tilesAmount] = {{0,   0,   0,   0},
 	                                   {0,   255, 64,  255},
 	                                   {128, 128, 128, 255}};
 
 	// Why? Because.
-	int cellDefaultAmount[k_cellsAmount] = {0, 30, 0};
+	int tileDefaultAmount[k_tilesAmount] = {0, 30, 0};
 
-	float homePheromoneEvaporationRate = 0.4f;
-	float foodPheromoneEvaporationRate = 0.4f;
+	float homePheromoneEvaporationRate = 0.008f;
+	float foodPheromoneEvaporationRate = 0.008f;
 
 	int homeRadius = 5;
 
@@ -70,27 +75,37 @@ struct WorldValueTable
 	int mapGenWallHighThreshold = 255;
 };
 
-class ValueTable
+class Settings
 {
-public:
-	const AntsValueTable &GetAntsTable() const { return m_antsTable; };
-	const WorldValueTable &GetWorldTable() const { return m_worldTable; };
+	inline static Settings *m_instance;
 
-	AntsValueTable &GetMutableAntsTable() { return m_antsTable; }
-	WorldValueTable &GetMutableWorldTable() { return m_worldTable; }
+public:
+	Settings()
+	{
+		assert(m_instance);
+		m_instance = this;
+	}
+
+	const AntsSettings &GetAntsSettings() const { return m_antsTable; };
+	const WorldSettings &GetWorldSettings() const { return m_worldTable; };
+
+	AntsSettings &GetMutableAntsSettings() { return m_antsTable; }
+	WorldSettings &GetMutableWorldSettings() { return m_worldTable; }
 
 	void Save(const std::string &filename);
 	void Load(const std::string &filename);
 
+	static std::vector<std::string> FindSavedSettings();
+
 	void Reset()
 	{
-		m_antsTable  = AntsValueTable();
-		m_worldTable = WorldValueTable();
+		m_antsTable  = AntsSettings();
+		m_worldTable = WorldSettings();
 	};
 
 private:
-	AntsValueTable  m_antsTable;
-	WorldValueTable m_worldTable;
+	AntsSettings  m_antsTable;
+	WorldSettings m_worldTable;
 };
 
-#endif //ANTS_VALUETABLE_HPP
+#endif //ANTS_SETTINGS_HPP

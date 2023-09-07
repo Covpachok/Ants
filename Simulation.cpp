@@ -20,10 +20,11 @@ constexpr float k_fixedTimestep = ( 1000.0 / 60.0 ) / 1000.0;
 
 
 Simulation::Simulation() :
-		m_ants()
+		m_settings(), m_ants()
 {
 	InitWindow(k_screenWidth, k_screenHeight, "Ants");
 
+	m_world = std::make_unique<World>(m_settings);
 	Init();
 
 //	SetTargetFPS(60);
@@ -36,8 +37,6 @@ Simulation::Simulation() :
 	m_camera.zoom     = 1;
 	m_camera.offset   = {0, 0};
 	m_camera.target   = {0, 0};
-
-	FindSaveFiles();
 }
 
 Simulation::~Simulation()
@@ -48,7 +47,7 @@ Simulation::~Simulation()
 
 void Simulation::Init()
 {
-	m_world.Init(k_screenWidth / 2, k_screenHeight / 2, m_valueTable.GetWorldTable());
+	m_world->Init();
 	InitAnts();
 }
 
@@ -86,10 +85,10 @@ void Simulation::HandleInput()
 		m_paintingEnabled = false;
 		if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 		{
-			auto worldPos = m_world.ScreenToWorld(mouseWorldPos);
-			if ( m_world.IsInBounds(worldPos))
+			auto worldPos = m_world->ScreenToWorld(mouseWorldPos);
+			if ( m_world->IsInBounds(worldPos))
 			{
-				auto homePosRef = m_valueTable.GetMutableWorldTable().homePos;
+				auto homePosRef = m_settings.GetMutableWorldSettings().homePos;
 				homePosRef[0] = worldPos.x;
 				homePosRef[1] = worldPos.y;
 
@@ -116,9 +115,9 @@ void Simulation::HandleInput()
 
 	if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT) && m_paintingEnabled )
 	{
-		auto pos = m_world.ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
+		auto pos = m_world->ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
 
-		m_brush.Paint(m_world, pos.x, pos.y);
+		m_brush.Paint(*m_world, pos.x, pos.y);
 	}
 
 	if ( IsKeyPressed(KEY_SPACE))
@@ -199,19 +198,19 @@ void Simulation::Update()
 		}
 	}
 
-	m_world.Update(k_fixedTimestep);
+	m_world->Update(k_fixedTimestep);
 
 
 #pragma omp parallel for default(none) shared(k_fixedTimestep)
 	for ( auto &ant: m_ants )
 	{
-		ant.Update(k_fixedTimestep, m_world);
+		ant.Update(k_fixedTimestep, *m_world);
 	}
 
 	// Thing that can't be parallelized are in here
 	for ( auto &ant: m_ants )
 	{
-		ant.PostUpdate(k_fixedTimestep, m_world);
+		ant.PostUpdate(k_fixedTimestep, *m_world);
 	}
 }
 
@@ -222,7 +221,7 @@ void Simulation::Draw()
 	ClearBackground({64, 64, 64, 255});
 
 	BeginMode2D(m_camera);
-	m_world.Draw(m_drawHomePheromones, m_drawFoodPheromones);
+	m_world->Draw(m_drawHomePheromones, m_drawFoodPheromones);
 
 	if ( m_drawAnts )
 	{
@@ -244,19 +243,19 @@ void Simulation::Draw()
 
 void Simulation::Reset()
 {
-	m_world.Erase();
+	m_world->Erase();
 	ResetAnts();
 	Init();
 }
 
 void Simulation::InitAnts()
 {
-	m_ants.resize(m_valueTable.GetWorldTable().antsAmount);
+	m_ants.resize(m_settings.GetWorldSettings().antsAmount);
 
-	auto       homePos = m_world.GetScreenHomePos();
+	auto       homePos = m_world->GetScreenHomePos();
 	for ( auto &ant: m_ants )
 	{
-		ant.Init(homePos.x, homePos.y, m_valueTable.GetAntsTable());
+		ant.Init(homePos.x, homePos.y, m_settings.GetAntsSettings());
 	}
 }
 
@@ -310,18 +309,18 @@ void Simulation::StatisticsGui()
 
 		ImGui::Separator();
 
-		ImGui::Value("Collected food ", m_world.GetCollectedFoodAmount());
-		ImGui::Value("Delivered food ", m_world.GetDeliveredFoodAmount());
-		ImGui::Value("Not delivered  ", m_world.GetCollectedFoodAmount() - m_world.GetDeliveredFoodAmount());
+		ImGui::Value("Collected food ", m_world->GetCollectedFoodAmount());
+		ImGui::Value("Delivered food ", m_world->GetDeliveredFoodAmount());
+		ImGui::Value("Not delivered  ", m_world->GetCollectedFoodAmount() - m_world->GetDeliveredFoodAmount());
 
 		ImGui::Separator();
 
-		ImGui::Value("Remaining food ", m_world.GetRemainingFoodAmount());
-		ImGui::Value("Total food     ", m_world.GetTotalFoodAmount());
+		ImGui::Value("Remaining food ", m_world->GetRemainingFoodAmount());
+		ImGui::Value("Total food     ", m_world->GetTotalFoodAmount());
 
 		ImGui::Separator();
 
-		ImGui::Text("Delivered/Total : %d/%d", m_world.GetDeliveredFoodAmount(), m_world.GetTotalFoodAmount());
+		ImGui::Text("Delivered/Total : %d/%d", m_world->GetDeliveredFoodAmount(), m_world->GetTotalFoodAmount());
 	}
 	ImGui::End();
 }
@@ -340,14 +339,14 @@ void Simulation::SettingsGui()
 
 				int              size      = m_brush.GetBrushSize();
 				Brush::BrushType brushType = m_brush.GetBrushType();
-				World::CellType  paintType = m_brush.GetPaintType();
+				World::TileType  paintType = m_brush.GetPaintType();
 
 				ImGui::Text("Press Left Mouse Button to paint");
 
 				ImGui::SliderInt("Brush size", &size, 1, 100);
 
 				ImGui::Combo("Paint type", reinterpret_cast<int *>(&paintType),
-				             paintTitles, static_cast<int>(World::CellType::Amount));
+				             paintTitles, static_cast<int>(World::TileType::Amount));
 				ImGui::Combo("Brush type", reinterpret_cast<int *>(&brushType),
 				             brushTitles, static_cast<int>(Brush::BrushType::Amount));
 
@@ -395,14 +394,14 @@ void Simulation::SettingsGui()
 
 		if ( ImGui::Button("Clear pheromones"))
 		{
-			m_world.ClearPheromones();
+			m_world->ClearPheromones();
 		}
 
 		ImGui::SameLine();
 
 		if ( ImGui::Button("Clear map"))
 		{
-			m_world.ClearMap();
+			m_world->ClearMap();
 		}
 
 		if ( ImGui::Button("Reset camera"))
@@ -420,31 +419,12 @@ void Simulation::SettingsGui()
 	ImGui::End();
 }
 
-void Simulation::FindSaveFiles()
-{
-	namespace fs = std::filesystem;
-	fs::path path = fs::current_path();
-
-	m_saveFiles.clear();
-
-	for ( const auto &entry: fs::directory_iterator(path))
-	{
-		if ( fs::is_regular_file(entry))
-		{
-			if ( entry.path().extension() == ".json" )
-			{
-				m_saveFiles.push_back(entry.path().filename().string());
-			}
-		}
-	}
-}
-
 void Simulation::AdvancedSettingsGui()
 {
 	ImGui::Begin("Advanced settings");
 	{
-		auto &antsValueTable  = m_valueTable.GetMutableAntsTable();
-		auto &worldValueTable = m_valueTable.GetMutableWorldTable();
+		auto &antsSettings  = m_settings.GetMutableAntsSettings();
+		auto &worldSettings = m_settings.GetMutableWorldSettings();
 
 		ImGui::SeparatorText("REALTIME CHANGE");
 
@@ -452,28 +432,28 @@ void Simulation::AdvancedSettingsGui()
 		{
 			ImGui::SeparatorText("Colors");
 
-			auto imguiColor = ColorConvert::RayColorToFloat4(antsValueTable.antDefaultColor);
+			auto imguiColor = ColorConvert::RayColorToFloat4(antsSettings.antDefaultColor);
 			ImGui::ColorEdit4("Default", imguiColor.color);
-			antsValueTable.antDefaultColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+			antsSettings.antDefaultColor = ColorConvert::Float4ToRayColor(imguiColor.color);
 
-			imguiColor = ColorConvert::RayColorToFloat4(antsValueTable.antWithFoodColor);
+			imguiColor = ColorConvert::RayColorToFloat4(antsSettings.antWithFoodColor);
 			ImGui::ColorEdit4("With food", imguiColor.color);
-			antsValueTable.antWithFoodColor = ColorConvert::Float4ToRayColor(imguiColor.color);
+			antsSettings.antWithFoodColor = ColorConvert::Float4ToRayColor(imguiColor.color);
 
 			ImGui::PushItemWidth(200);
 
 			ImGui::SeparatorText("Movement");
 
-			ImGui::InputFloat("Movement speed", &antsValueTable.antMovementSpeed);
-			ImGui::InputFloat("Rotation speed", &antsValueTable.antRotationSpeed);
+			ImGui::InputFloat("Movement speed", &antsSettings.antMovementSpeed);
+			ImGui::InputFloat("Rotation speed", &antsSettings.antRotationSpeed);
 
-			ImGui::SliderFloat("Random angle", &antsValueTable.antRandomAngle, 0.f, 1.f);
+			ImGui::SliderFloat("Random angle", &antsSettings.antRandomRotation, 0.f, 1.f);
 			HelpTooltip("When ants wander, they choose a random angle\n"
 			            "in which to look and move in that direction");
 
 			ImGui::SeparatorText("Perception");
 
-			ImGui::SliderInt("FOV range", &antsValueTable.antFovRange, 2, 16);
+			ImGui::SliderInt("FOV range", &antsSettings.antFovRange, 2, 16);
 			HelpTooltip("Ants can perceive objects in a cone in front of them,\n"
 			            "this variable affects size of this cone.\n"
 			            "Heavily affects performance");
@@ -481,20 +461,20 @@ void Simulation::AdvancedSettingsGui()
 
 			ImGui::SeparatorText("Pheromones");
 
-			ImGui::InputFloat("Home strength loss", &antsValueTable.homePheromoneStrengthLoss);
-			ImGui::InputFloat("Food strength loss", &antsValueTable.foodPheromoneStrengthLoss);
+			ImGui::InputFloat("Home strength loss", &antsSettings.homePheromoneStrengthLoss);
+			ImGui::InputFloat("Food strength loss", &antsSettings.foodPheromoneStrengthLoss);
 			HelpTooltip("Over time, ants lose the strength of their pheromones.\n"
 			            "This variable prevents the ants from going in circles forever\n"
 			            "and also allows them to take shorter paths.");
 
-			ImGui::InputFloat("Home spawn intensity", &antsValueTable.foodPheromoneIntensity);
-			ImGui::InputFloat("Food spawn intensity", &antsValueTable.homePheromoneIntensity);
+			ImGui::InputFloat("Home spawn intensity", &antsSettings.foodPheromoneIntensity);
+			ImGui::InputFloat("Food spawn intensity", &antsSettings.homePheromoneIntensity);
 			HelpTooltip("Amount of pheromones spawned each time");
 
 			ImGui::SeparatorText("Other");
 
-			ImGui::InputFloat("Food spawn delay", &antsValueTable.pheromoneSpawnDelay);
-			ImGui::InputFloat("Deviation chance", &antsValueTable.deviationChance);
+			ImGui::InputFloat("Food spawn delay", &antsSettings.pheromoneSpawnDelay);
+			ImGui::InputFloat("Deviation chance", &antsSettings.deviationChance);
 
 			ImGui::PopItemWidth();
 			ImGui::TreePop();
@@ -504,7 +484,7 @@ void Simulation::AdvancedSettingsGui()
 
 		ImGui::SeparatorText("WILL CHANGE ONLY AFTER A RESET");
 		{
-			ImGui::InputInt("Ants amount", &worldValueTable.antsAmount);
+			ImGui::InputInt("Ants amount", &worldSettings.antsAmount);
 
 			if ( ImGui::TreeNode("World settings"))
 			{
@@ -512,32 +492,39 @@ void Simulation::AdvancedSettingsGui()
 				{
 					using namespace ColorConvert;
 
-					ImGuiRlColorEdit4("Food", worldValueTable.cellColors[World::Food]);
-					ImGuiRlColorEdit4("Wall", worldValueTable.cellColors[World::Wall]);
+					ImGuiRlColorEdit4("Food", worldSettings.tileColors[World::Food]);
+					ImGuiRlColorEdit4("Wall", worldSettings.tileColors[World::Wall]);
 
-					ImGuiRlColorEdit4("Home pheromone", worldValueTable.homePheromoneColor);
-					ImGuiRlColorEdit4("Food pheromone", worldValueTable.foodPheromoneColor);
+					ImGuiRlColorEdit4("Home pheromone", worldSettings.homePheromoneColor);
+					ImGuiRlColorEdit4("Food pheromone", worldSettings.foodPheromoneColor);
 				}
 
 				ImGui::PushItemWidth(200);
 
-				ImGui::SeparatorText("Cells");
+				ImGui::SeparatorText("Tiles");
 
-				ImGui::SliderInt("Food amount per cell", &worldValueTable.cellDefaultAmount[1], 1, 512);
+				ImGui::SliderInt("Food amount per tile", &worldSettings.tileDefaultAmount[1], 1, 512);
 
 				ImGui::SeparatorText("Pheromones");
 
-				ImGui::SliderFloat("Home evaporation rate", &worldValueTable.homePheromoneEvaporationRate, 0.f, 255.f);
-				ImGui::SliderFloat("Food evaporation rate", &worldValueTable.foodPheromoneEvaporationRate, 0.f, 255.f);
+				ImGui::InputFloat("Home evaporation rate", &worldSettings.homePheromoneEvaporationRate, 0.f, 0.f,
+				                  "%.3f");
+				ImGui::InputFloat("Food evaporation rate", &worldSettings.foodPheromoneEvaporationRate, 0.f, 0.f,
+				                  "%.3f");
+
+				worldSettings.homePheromoneEvaporationRate = std::clamp(worldSettings.homePheromoneEvaporationRate,
+				                                                        0.f, 255.f);
+				worldSettings.foodPheromoneEvaporationRate = std::clamp(worldSettings.foodPheromoneEvaporationRate,
+				                                                        0.f, 255.f);
 
 				ImGui::SeparatorText("Home");
 
-				ImGui::SliderInt("Radius", &worldValueTable.homeRadius, 2, 10);
-				ImGui::Checkbox("Centered position", &worldValueTable.centeredHomePos);
-				if ( !worldValueTable.centeredHomePos )
+				ImGui::SliderInt("Radius", &worldSettings.homeRadius, 2, 10);
+				ImGui::Checkbox("Centered position", &worldSettings.centeredHomePos);
+				if ( !worldSettings.centeredHomePos )
 				{
 					ImGui::Separator();
-					ImGui::InputInt2("Pos", worldValueTable.homePos);
+					ImGui::InputInt2("Pos", worldSettings.homePos);
 					ImGui::Checkbox("Choose by mouse click", &m_choosingHomePos);
 				}
 
@@ -554,28 +541,28 @@ void Simulation::AdvancedSettingsGui()
 
 				const char *titles[] = {"None", "Food only", "Walls only", "Food and Walls"};
 
-				ImGui::Combo("Cells to generate", reinterpret_cast<int *>(&worldValueTable.mapGenSettings),
-				             titles, static_cast<int>(WorldValueTable::MapGenSettings::Amount));
+				ImGui::Combo("Tiles to generate", reinterpret_cast<int *>(&worldSettings.mapGenSettings),
+				             titles, static_cast<int>(WorldSettings::MapGenSettings::Amount));
 
 				ImGui::SeparatorText("Noise gen");
 
-				ImGui::SliderFloat("Scale", &worldValueTable.mapGenNoiseScale, 1.f, 32.f);
+				ImGui::SliderFloat("Scale", &worldSettings.mapGenNoiseScale, 1.f, 32.f);
 				HelpTooltip("The larger the scale, the more detailed the noise will be.");
-				ImGui::SliderInt("Blur", &worldValueTable.mapGenNoiseBlur, 1, 8);
+				ImGui::SliderInt("Blur", &worldSettings.mapGenNoiseBlur, 1, 8);
 				HelpTooltip("Makes world smoother.");
-				ImGui::SliderFloat("Contrast", &worldValueTable.mapGenNoiseContrast, 1.f, 128.f);
+				ImGui::SliderFloat("Contrast", &worldSettings.mapGenNoiseContrast, 1.f, 128.f);
 
-				ImGui::SeparatorText("Cells thresholds");
+				ImGui::SeparatorText("Tiles thresholds");
 
 				ImGui::DragIntRange2("Food spawn range",
-				                     &worldValueTable.mapGenFoodLowThreshold,
-				                     &worldValueTable.mapGenFoodHighThreshold,
+				                     &worldSettings.mapGenFoodLowThreshold,
+				                     &worldSettings.mapGenFoodHighThreshold,
 				                     1, 0, 255,
 				                     "From: %d", "To: %d", ImGuiSliderFlags_AlwaysClamp);
 
 				ImGui::DragIntRange2("Wall spawn range",
-				                     &worldValueTable.mapGenWallLowThreshold,
-				                     &worldValueTable.mapGenWallHighThreshold,
+				                     &worldSettings.mapGenWallLowThreshold,
+				                     &worldSettings.mapGenWallHighThreshold,
 				                     1, 0, 255,
 				                     "From: %d", "To: %d", ImGuiSliderFlags_AlwaysClamp);
 
@@ -591,32 +578,35 @@ void Simulation::AdvancedSettingsGui()
 
 		if ( ImGui::TreeNode("Save/Load"))
 		{
+			static std::vector<std::string> savedSettingsFiles = Settings::FindSavedSettings();
+
 			ImGui::PushItemWidth(200);
 
 			ImGui::Text("Filename");
-			ImGui::InputText("", &m_saveFilename);
+			ImGui::InputText("S", &m_saveFilename);
 
 			ImGui::SameLine();
 
 			if ( ImGui::Button("Save"))
 			{
-				m_valueTable.Save(m_saveFilename);
+				m_settings.Save(m_saveFilename);
+				savedSettingsFiles = Settings::FindSavedSettings();
 			}
 
 			static size_t selectedIndex = 0;
-			if ( m_saveFiles.empty())
+			if ( savedSettingsFiles.empty())
 			{
 				ImGui::TextDisabled("Not found any save files");
 			}
 			else
 			{
-				const char *previewValue = m_saveFiles[selectedIndex].c_str();
-				if ( ImGui::BeginCombo("", previewValue))
+				const char *previewValue = savedSettingsFiles[selectedIndex].c_str();
+				if ( ImGui::BeginCombo("L", previewValue))
 				{
-					for ( size_t i = 0; i < m_saveFiles.size(); ++i )
+					for ( size_t i = 0; i < savedSettingsFiles.size(); ++i )
 					{
 						const bool isSelected = ( selectedIndex == i );
-						if ( ImGui::Selectable(m_saveFiles[i].c_str(), isSelected))
+						if ( ImGui::Selectable(savedSettingsFiles[i].c_str(), isSelected))
 						{
 							selectedIndex = i;
 						}
@@ -634,14 +624,14 @@ void Simulation::AdvancedSettingsGui()
 
 			if ( ImGui::Button("Load"))
 			{
-				m_valueTable.Load(m_saveFiles[selectedIndex]);
+				m_settings.Load(savedSettingsFiles[selectedIndex]);
 			}
 
 			ImGui::SameLine();
 
 			if ( ImGui::Button("Update list"))
 			{
-				FindSaveFiles();
+				savedSettingsFiles = Settings::FindSavedSettings();
 			}
 
 			ImGui::PopItemWidth();
@@ -653,7 +643,7 @@ void Simulation::AdvancedSettingsGui()
 
 		if ( ImGui::Button("Reset settings values"))
 		{
-			m_valueTable.Reset();
+			m_settings.Reset();
 		}
 
 	}

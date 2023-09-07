@@ -4,7 +4,7 @@
 #include <cmath>
 #include <raylib.h>
 
-#include "ValueTable.hpp"
+#include "Settings.hpp"
 #include "IntVec.hpp"
 #include "Timer.hpp"
 
@@ -13,7 +13,7 @@ class World;
 class Ant
 {
 public:
-	void Init(float startX, float startY, const AntsValueTable &valueTable);
+	void Init(float startX, float startY, const AntsSettings &valueTable);
 
 	void Update(float delta, const World &world);
 	void PostUpdate(float delta, World &world);
@@ -24,10 +24,10 @@ public:
 
 	void TurnBackward()
 	{
-		m_angle -= M_PI;
-		m_desiredAngle = m_angle; /* - M_PI;*/ }
+		m_rotation -= M_PI;
+		m_desiredRotation = m_rotation; /* - M_PI;*/ }
 
-	void ChangeDesiredAngle(Vector2 desiredPos);
+	void ChangeDesiredRotation(Vector2 desiredPos);
 
 	Vector2 GetPos() const { return m_pos; }
 	bool IsGotFood() const { return m_gotFood; }
@@ -43,26 +43,26 @@ public:
 
 private:
 
-	void Move(float delta);
+	void Move(float delta, const World &world);
 
-	void StayOnScreen();
+	void StayInBounds(const World& world);
 
 	void CheckInFov(const World &world);
 
-	void RandomizeAngle(float pi = M_PI);
+	void RandomizeRotation(float pi = M_PI);
 
-	void RandomizeDesiredAngle(float pi = M_PI);
+	void RandomizeDesiredRotation(float pi = M_PI);
 
 private:
 	Vector2 m_prevPos;
 	Vector2 m_pos;
 
-	const AntsValueTable *m_valueTable;
+	const AntsSettings *m_antsSettings;
 
 	const Color *m_colorsPtr[2];
 
-	float m_angle;
-	float m_desiredAngle;
+	float m_rotation;
+	float m_desiredRotation;
 
 	float m_homeStrength = 1;
 	float m_foodStrength = 0;
@@ -72,12 +72,11 @@ private:
 	Timer m_deviationTimer;
 
 	bool m_gotFood            = false;
-	bool m_shouldDecreaseCell = false;
+	bool m_shouldDecreaseTile = false;
 	bool m_deliveredFood      = false;
+	bool m_ignorePheromones   = false;
 
-	bool  m_ignorePheromones  = false;
-
-	IntVec2 m_cellToDecreasePos;
+	IntVec2 m_tileToDecreasePos;
 };
 
 

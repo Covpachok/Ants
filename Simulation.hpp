@@ -3,7 +3,7 @@
 
 #include "Ant.hpp"
 #include "World.hpp"
-#include "ValueTable.hpp"
+#include "Settings.hpp"
 #include "Brush.hpp"
 
 #include <vector>
@@ -30,18 +30,18 @@ private:
 	void ResetAnts();
 	void ResetCamera();
 
+	// Should put it in a different class
 	void ShowGui();
 	void StatisticsGui();
 	void SettingsGui();
 	void AdvancedSettingsGui();
 
-	void FindSaveFiles();
-
 private:
-	std::vector<Ant> m_ants;
-	World            m_world;
+	Settings m_settings;
 
-	ValueTable m_valueTable;
+	// Really should put ants in World class
+	std::vector<Ant>       m_ants;
+	std::unique_ptr<World> m_world;
 
 	float m_gameSpeed = 1;
 
@@ -66,7 +66,6 @@ private:
 	bool m_paintingEnabled = true;
 
 	std::string m_saveFilename = "save";
-	std::vector<std::string> m_saveFiles;
 };
 
 

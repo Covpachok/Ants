@@ -3,7 +3,7 @@
 
 void PaintPoint(World &world, Brush &brush, int x, int y)
 {
-	world.SetCell(x, y, brush.GetPaintType());
+	world.SetTile(x, y, brush.GetPaintType());
 }
 
 void PaintSquare(World &world, Brush &brush, int x, int y)
@@ -14,7 +14,7 @@ void PaintSquare(World &world, Brush &brush, int x, int y)
 	{
 		for ( int j = -radius; j <= radius; ++j )
 		{
-			world.SetCell(j + x, i + y, brush.GetPaintType());
+			world.SetTile(j + x, i + y, brush.GetPaintType());
 		}
 	}
 }
@@ -30,7 +30,7 @@ void PaintRound(World &world, Brush &brush, int x, int y)
 		{
 			if ( i * i + j * j <= radiusSquared )
 			{
-				world.SetCell(j + x, i + y, brush.GetPaintType());
+				world.SetTile(j + x, i + y, brush.GetPaintType());
 			}
 		}
 	}

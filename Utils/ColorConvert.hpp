@@ -1,8 +1,8 @@
 #ifndef ANTS_COLORCONVERT_HPP
 #define ANTS_COLORCONVERT_HPP
 
-#include <imgui.h>
-#include <raylib.h>
+#include "imgui.h"
+#include "raylib/src/raylib.h"
 
 namespace ColorConvert
 {
