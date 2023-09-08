@@ -6,34 +6,46 @@
 #include <string>
 #include <vector>
 
+#include <json.hpp>
+
 constexpr int k_tilesAmount = 3;
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Color, r, g, b, a)
 
 struct AntsSettings
 {
-	float antMovementSpeed = 40;
-	float antRotationSpeed = 10;
-
-	float antRandomRotation = 0.3;
-	int   antFovRange       = 12;
-
+	float antMovementSpeed          = 40;
+	float antRotationSpeed          = 10;
+	float antRandomRotation         = 0.3;
+	int   antFovRange               = 12;
 	float foodPheromoneStrengthLoss = 0.005;
 	float homePheromoneStrengthLoss = 0.005;
-
-	float foodPheromoneIntensity = 128;
-	float homePheromoneIntensity = 128;
-
-	float pheromoneSpawnDelay = 0.25f;
-
-	float deviationChance = 0.001;
-
-	Color antDefaultColor  = {128, 128, 255, 128};
-	Color antWithFoodColor = {128, 255, 128, 128};
+	float foodPheromoneIntensity    = 128;
+	float homePheromoneIntensity    = 128;
+	float pheromoneSpawnDelay       = 0.25f;
+	float deviationChance           = 0.001;
+	Color antDefaultColor           = {128, 128, 255, 128};
+	Color antWithFoodColor          = {128, 255, 128, 128};
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntsSettings,
+                                   antMovementSpeed,
+                                   antRotationSpeed,
+                                   antRandomRotation,
+                                   antFovRange,
+                                   foodPheromoneStrengthLoss,
+                                   homePheromoneStrengthLoss,
+                                   foodPheromoneIntensity,
+                                   homePheromoneIntensity,
+                                   pheromoneSpawnDelay,
+                                   deviationChance,
+                                   antDefaultColor,
+                                   antWithFoodColor)
 
 struct WorldSettings
 {
-	int mapWidth  = 1280 / 3;
-	int mapHeight = 720 / 3;
+	int   mapWidth         = 1280 / 3;
+	int   mapHeight        = 720 / 3;
 	float screenToMapRatio = 3.f;
 
 	enum MapGenSettings
@@ -75,6 +87,29 @@ struct WorldSettings
 	int mapGenWallHighThreshold = 255;
 };
 
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldSettings,
+                                   mapWidth,
+                                   mapHeight,
+                                   screenToMapRatio,
+                                   foodPheromoneColor,
+                                   homePheromoneColor,
+                                   tileColors,
+                                   tileDefaultAmount,
+                                   homePheromoneEvaporationRate,
+                                   foodPheromoneEvaporationRate,
+                                   homeRadius,
+                                   centeredHomePos,
+                                   homePos,
+                                   antsAmount,
+                                   mapGenNoiseScale,
+                                   mapGenNoiseBlur,
+                                   mapGenNoiseContrast,
+                                   mapGenSettings,
+                                   mapGenFoodLowThreshold,
+                                   mapGenFoodHighThreshold,
+                                   mapGenWallLowThreshold,
+                                   mapGenWallHighThreshold)
+
 class Settings
 {
 	inline static Settings *m_instance;
@@ -86,11 +121,23 @@ public:
 		m_instance = this;
 	}
 
-	const AntsSettings &GetAntsSettings() const { return m_antsTable; };
-	const WorldSettings &GetWorldSettings() const { return m_worldTable; };
+	const AntsSettings &GetAntsSettings() const
+	{
+		return m_antsTable;
+	};
+	const WorldSettings &GetWorldSettings() const
+	{
+		return m_worldTable;
+	};
 
-	AntsSettings &GetMutableAntsSettings() { return m_antsTable; }
-	WorldSettings &GetMutableWorldSettings() { return m_worldTable; }
+	AntsSettings &GetMutableAntsSettings()
+	{
+		return m_antsTable;
+	}
+	WorldSettings &GetMutableWorldSettings()
+	{
+		return m_worldTable;
+	}
 
 	void Save(const std::string &filename);
 	void Load(const std::string &filename);
