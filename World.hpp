@@ -40,8 +40,8 @@ public:
 	void SetTile(int x, int y, TileType type);
 	void DecreaseTile(int x, int y);
 
-	void AddHomePheromone(int x, int y, double intensity);
-	void AddFoodPheromone(int x, int y, double intensity);
+	void AddHomePheromone(int x, int y, float intensity);
+	void AddFoodPheromone(int x, int y, float intensity);
 
 	void ClearPheromones();
 	void ClearMap();
@@ -80,17 +80,17 @@ public:
 
 	inline void IncDeliveredFoodCount();
 
-	int GetCollectedFoodAmount() const;
-	int GetDeliveredFoodAmount() const;
+	inline int GetCollectedFoodAmount() const;
+	inline int GetDeliveredFoodAmount() const;
 
-	int GetTotalFoodAmount() const;
-	int GetRemainingFoodAmount() const;
+	inline int GetTotalFoodAmount() const;
+	inline int GetRemainingFoodAmount() const;
 
-	int GetWidth() const;
-	int GetHeight() const;
+	inline int GetWidth() const;
+	inline int GetHeight() const;
 
-	float GetScreenWidth() const;
-	float GetScreenHeight() const;
+	inline float GetScreenWidth() const;
+	inline float GetScreenHeight() const;
 
 private:
 	inline int ToMapIndex(int x, int y) const;
@@ -113,25 +113,14 @@ private:
 
 	Tile **m_worldMap;
 
-	Texture m_worldTexture;
-	Color   *m_worldColorMap;
-
 	double m_homePheromoneEvaporationRate;
 	double m_foodPheromoneEvaporationRate;
-
-	double **m_homePheromoneMap;
-	double **m_foodPheromoneMap;
-
-//	Texture m_homePheromoneTexture{};
-//	Color   *m_pheromonesColorMap;
-
-	Texture m_foodPheromoneTexture{};
-	Color   *m_foodPheromoneColorMap;
 
 	std::unique_ptr<ColorMap> m_tilesColorMap;
 	std::unique_ptr<ColorMap> m_pheromonesColorMap;
 
 	std::unique_ptr<PheromoneMap> m_homePheromoneMap;
+	std::unique_ptr<PheromoneMap> m_foodPheromoneMap;
 
 	// -------------
 
@@ -158,23 +147,25 @@ private:
 
 double World::GetFoodPheromone(int x, int y) const
 {
-	return IsInBounds(x, y) ? m_foodPheromoneMap[y][x] : 0;
+	return m_foodPheromoneMap->Get(x, y);
+//	return IsInBounds(x, y) ? m_foodPheromoneMap[y][x] : 0;
 }
 
 double World::GetHomePheromone(int x, int y) const
 {
-	return IsInBounds(x, y) ? m_homePheromoneMap[y][x] : 0;
+	return m_homePheromoneMap->Get(x, y);
+//	return IsInBounds(x, y) ? m_homePheromoneMap[y][x] : 0;
 }
 
 
 double World::UnsafeGetFoodPheromone(int x, int y) const
 {
-	return m_foodPheromoneMap[y][x];
+	return m_foodPheromoneMap->UnsafeGet(x, y);
 }
 
 double World::UnsafeGetHomePheromone(int x, int y) const
 {
-	return m_homePheromoneMap[y][x];
+	return m_homePheromoneMap->UnsafeGet(x, y);
 }
 
 const World::Tile &World::GetTile(int x, int y) const

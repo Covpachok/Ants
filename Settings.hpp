@@ -32,8 +32,8 @@ struct AntsSettings
 
 struct WorldSettings
 {
-	int mapWidth  = 800;
-	int mapHeight = 100;
+	int mapWidth  = 1280 / 3;
+	int mapHeight = 720 / 3;
 	float screenToMapRatio = 3.f;
 
 	enum MapGenSettings

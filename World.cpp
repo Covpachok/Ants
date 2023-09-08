@@ -9,8 +9,6 @@
 World::World(const Settings &settings)
 {
 	m_worldSettings = &settings.GetWorldSettings();
-
-//	Init();
 }
 
 void World::Init()
@@ -30,26 +28,15 @@ void World::Init()
 	                                                  Color{0, 0, 0, 0});
 	m_pheromonesColorMap = std::make_unique<ColorMap>(m_width, m_height, m_screenToWorldRatio,
 	                                                  BLACK);
-
 	m_worldMap = new Tile *[m_height];
-
-	m_homePheromoneMap = new double *[m_height];
-	m_foodPheromoneMap = new double *[m_height];
 
 	for ( int i = 0; i < m_height; ++i )
 	{
 		m_worldMap[i] = new Tile[m_width];
-
-		m_homePheromoneMap[i] = new double[m_width];
-		m_foodPheromoneMap[i] = new double[m_width];
-
 		for ( int j = 0; j < m_width; ++j )
 		{
 			m_worldMap[i][j].type   = TileType::None;
 			m_worldMap[i][j].amount = 0;
-
-			m_homePheromoneMap[i][j] = 0;
-			m_foodPheromoneMap[i][j] = 0;
 		}
 	}
 
@@ -65,6 +52,12 @@ void World::Init()
 
 	m_homePheromoneEvaporationRate = m_worldSettings->homePheromoneEvaporationRate;
 	m_foodPheromoneEvaporationRate = m_worldSettings->foodPheromoneEvaporationRate;
+
+
+	m_homePheromoneMap = std::make_unique<PheromoneMap>(m_width, m_height, m_screenToWorldRatio,
+	                                                    m_homePheromoneEvaporationRate, m_worldSettings->homePheromoneColor);
+	m_foodPheromoneMap = std::make_unique<PheromoneMap>(m_width, m_height, m_screenToWorldRatio,
+	                                                    m_foodPheromoneEvaporationRate, m_worldSettings->foodPheromoneColor);
 
 	// -------------
 
@@ -113,37 +106,11 @@ void World::Update(double delta)
 {
 	for ( auto &pos: m_homeTilePositions )
 	{
-		m_homePheromoneMap[pos.y][pos.x] = 255;
+		m_homePheromoneMap->Set(pos, 255);
 	}
 
-#pragma omp parallel for default(none) shared(m_homePheromoneMap, m_foodPheromoneMap, \
-    m_pheromonesColorMap, m_homePheromoneEvaporationRate, m_foodPheromoneEvaporationRate)
-	for ( int y = 0; y < m_height; ++y )
-	{
-		double *homePheromoneRow = m_homePheromoneMap[y];
-		double *foodPheromoneRow = m_foodPheromoneMap[y];
-
-		const int rowIndex = y * m_width;
-
-		for ( int x = 0; x < m_width; ++x )
-		{
-			double &homePheromone = homePheromoneRow[x];
-			double &foodPheromone = foodPheromoneRow[x];
-
-			homePheromone = std::max(homePheromone - m_homePheromoneEvaporationRate, 0.0);
-			foodPheromone = std::max(foodPheromone - m_foodPheromoneEvaporationRate, 0.0);
-
-			const int index = rowIndex + x;
-//			m_pheromonesColorMap[index].a = static_cast<unsigned char>(homePheromone);
-			m_pheromonesColorMap->Set(index,
-			                          {0,
-			                           static_cast<unsigned char>(foodPheromone),
-			                           static_cast<unsigned char>(homePheromone),
-			                           255});
-//			m_pheromonesColorMap->GetMutable(index).a = static_cast<unsigned char>(homePheromone);
-//			m_foodPheromoneColorMap[index].a        = static_cast<unsigned char>(foodPheromone);
-		}
-	}
+	m_homePheromoneMap->Update();
+	m_foodPheromoneMap->Update();
 }
 
 void World::SetTile(int x, int y, TileType type)
@@ -162,8 +129,8 @@ void World::SetTile(int x, int y, TileType type)
 	m_tilesColorMap->Set(mapIndex, m_tileColors[type]);
 	if ( type != None )
 	{
-		m_homePheromoneMap[y][x] = 0;
-		m_foodPheromoneMap[y][x] = 0;
+		m_homePheromoneMap->Set(x, y, 0);
+		m_foodPheromoneMap->Set(x, y, 0);
 	}
 
 	if ( type == Food )
@@ -206,24 +173,23 @@ void World::DecreaseTile(int x, int y)
 	}
 }
 
-void World::AddHomePheromone(int x, int y, double intensity)
+void World::AddHomePheromone(int x, int y, float intensity)
 {
-	if ( !IsInBounds(x, y) || m_worldMap[y][x].type != None )
+	if ( m_worldMap[y][x].type != None )
 	{
 		return;
 	}
-	m_homePheromoneMap[y][x] = std::max(m_homePheromoneMap[y][x], intensity);
+	m_homePheromoneMap->Add(x, y, intensity);
 }
 
-void World::AddFoodPheromone(int x, int y, double intensity)
+void World::AddFoodPheromone(int x, int y, float intensity)
 {
-	if ( !IsInBounds(x, y) || m_worldMap[y][x].type != None )
+	if ( m_worldMap[y][x].type != None )
 	{
 		return;
 	}
 
-//	m_foodPheromoneMap[y][x] = std::min(m_foodPheromoneMap[y][x] + intensity, 255.0);
-	m_foodPheromoneMap[y][x] = std::max(m_foodPheromoneMap[y][x], intensity);
+	m_foodPheromoneMap->Add(x, y, intensity);
 }
 
 void World::ClearPheromones()
@@ -233,18 +199,15 @@ void World::ClearPheromones()
 		const int rowIndex = y * m_width;
 		for ( int x        = 0; x < m_width; ++x )
 		{
-			m_homePheromoneMap[y][x] = 0;
-			m_foodPheromoneMap[y][x] = 0;
+			m_homePheromoneMap->Set(x, y, 0);
+			m_foodPheromoneMap->Set(x, y, 0);
 
 			const int index = rowIndex + x;
 			m_pheromonesColorMap->GetMutable(index).a = 0;
-			m_foodPheromoneColorMap[index].a          = 0;
 		}
 	}
 
 	m_pheromonesColorMap->Update();
-//	UpdateTexture(m_homePheromoneTexture, m_pheromonesColorMap);
-	UpdateTexture(m_foodPheromoneTexture, m_foodPheromoneColorMap);
 }
 
 void World::ClearMap()
@@ -270,8 +233,11 @@ void World::Draw(bool h, bool f) const
 
 	if ( h )
 	{
-		m_pheromonesColorMap->Update();
-		m_pheromonesColorMap->Draw();
+		m_homePheromoneMap->Draw();
+	}
+	if ( f )
+	{
+		m_foodPheromoneMap->Draw();
 	}
 	m_tilesColorMap->Draw();
 
@@ -285,25 +251,9 @@ void World::Erase()
 	for ( int y = 0; y < m_height; ++y )
 	{
 		delete[] m_worldMap[y];
-		delete[] m_homePheromoneMap[y];
-		delete[] m_foodPheromoneMap[y];
 	}
 
 	delete[] m_worldMap;
-	delete[] m_homePheromoneMap;
-	delete[] m_foodPheromoneMap;
-
-//	UnloadImage(m_homePheromoneImage);
-//	UnloadImage(m_foodPheromoneImage);
-//	UnloadImage(m_worldImage);
-
-//	UnloadTexture(m_homePheromoneTexture);
-//	UnloadTexture(m_foodPheromoneTexture);
-//	UnloadTexture(m_worldTexture);
-
-//	UnloadImageColors(m_pheromonesColorMap);
-//	UnloadImageColors(m_foodPheromoneColorMap);
-//	UnloadImageColors(m_worldColorMap);
 }
 
 void World::Reset(int width, int height)

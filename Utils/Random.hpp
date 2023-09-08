@@ -25,7 +25,7 @@ public:
 	}
 
 private:
-	inline static std::mt19937 m_generator;
+	inline static std::mt19937 m_generator{std::random_device()()};
 };
 
 #endif //ANTS_RANDOM_HPP
