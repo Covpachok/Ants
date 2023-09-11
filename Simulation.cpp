@@ -86,7 +86,7 @@ void Simulation::HandleInput()
 		if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 		{
 			auto worldPos = m_world->ScreenToWorld(mouseWorldPos);
-			if ( m_world->IsInBounds(worldPos))
+			if ( m_world->BoundsChecker().IsInBounds(worldPos))
 			{
 				auto homePosRef = m_settings.GetMutableWorldSettings().homePos;
 				homePosRef[0] = worldPos.x;
@@ -339,14 +339,14 @@ void Simulation::SettingsGui()
 
 				int              size      = m_brush.GetBrushSize();
 				Brush::BrushType brushType = m_brush.GetBrushType();
-				World::TileType  paintType = m_brush.GetPaintType();
+				TileType         paintType = m_brush.GetPaintType();
 
 				ImGui::Text("Press Left Mouse Button to paint");
 
 				ImGui::SliderInt("Brush size", &size, 1, 100);
 
 				ImGui::Combo("Paint type", reinterpret_cast<int *>(&paintType),
-				             paintTitles, static_cast<int>(World::TileType::Amount));
+				             paintTitles, static_cast<int>(TileType::Amount));
 				ImGui::Combo("Brush type", reinterpret_cast<int *>(&brushType),
 				             brushTitles, static_cast<int>(Brush::BrushType::Amount));
 
@@ -492,8 +492,8 @@ void Simulation::AdvancedSettingsGui()
 				{
 					using namespace ColorConvert;
 
-					ImGuiRlColorEdit4("Food", worldSettings.tileColors[World::Food]);
-					ImGuiRlColorEdit4("Wall", worldSettings.tileColors[World::Wall]);
+					ImGuiRlColorEdit4("Food", worldSettings.tileColors[TileType::Food]);
+					ImGuiRlColorEdit4("Wall", worldSettings.tileColors[TileType::Wall]);
 
 					ImGuiRlColorEdit4("Home pheromone", worldSettings.homePheromoneColor);
 					ImGuiRlColorEdit4("Food pheromone", worldSettings.foodPheromoneColor);
@@ -542,7 +542,7 @@ void Simulation::AdvancedSettingsGui()
 				const char *titles[] = {"None", "Food only", "Walls only", "Food and Walls"};
 
 				ImGui::Combo("Tiles to generate", reinterpret_cast<int *>(&worldSettings.mapGenSettings),
-				             titles, static_cast<int>(WorldSettings::MapGenSettings::Amount));
+				             titles, static_cast<int>(MapGenSettings::Amount));
 
 				ImGui::SeparatorText("Noise gen");
 
@@ -554,17 +554,19 @@ void Simulation::AdvancedSettingsGui()
 
 				ImGui::SeparatorText("Tiles thresholds");
 
+#if 0
 				ImGui::DragIntRange2("Food spawn range",
-				                     &worldSettings.mapGenFoodLowThreshold,
-				                     &worldSettings.mapGenFoodHighThreshold,
-				                     1, 0, 255,
-				                     "From: %d", "To: %d", ImGuiSliderFlags_AlwaysClamp);
+									 &worldSettings.mapGenFoodLowThreshold,
+									 &worldSettings.mapGenFoodHighThreshold,
+									 1, 0, 255,
+									 "From: %d", "To: %d", ImGuiSliderFlags_AlwaysClamp);
 
 				ImGui::DragIntRange2("Wall spawn range",
-				                     &worldSettings.mapGenWallLowThreshold,
-				                     &worldSettings.mapGenWallHighThreshold,
-				                     1, 0, 255,
-				                     "From: %d", "To: %d", ImGuiSliderFlags_AlwaysClamp);
+									 &worldSettings.mapGenWallLowThreshold,
+									 &worldSettings.mapGenWallHighThreshold,
+									 1, 0, 255,
+									 "From: %d", "To: %d", ImGuiSliderFlags_AlwaysClamp);
+#endif
 
 				ImGui::PopItemWidth();
 

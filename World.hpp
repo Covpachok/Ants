@@ -14,20 +14,22 @@
 #include "IntVec.hpp"
 #include "ColorMap.hpp"
 #include "PheromoneMap.hpp"
+#include "TileMap.hpp"
+#include "BoundsChecker.hpp"
 
 class World
 {
 public:
-	enum TileType
-	{
-		None, Food, Wall, Amount
-	};
-
-	struct Tile
-	{
-		TileType type   = None;
-		int      amount = 0;
-	};
+//	enum TileType
+//	{
+//		None, Food, Wall, Amount
+//	};
+//
+//	struct Tile
+//	{
+//		TileType type   = None;
+//		int      amount = 0;
+//	};
 
 public:
 	World(const Settings &settings);
@@ -37,8 +39,13 @@ public:
 
 	void Update(double delta);
 
-	void SetTile(int x, int y, TileType type);
-	void DecreaseTile(int x, int y);
+	inline TileMap &GetTileMap() { return *m_tileMap; };
+	inline PheromoneMap &GetFoodPheromoneMap() { return *m_foodPheromoneMap; };
+	inline PheromoneMap &GetHomePheromoneMap() { return *m_homePheromoneMap; };
+
+	inline const TileMap &GetTileMap() const { return *m_tileMap; };
+	inline const PheromoneMap &GetFoodPheromoneMap() const { return *m_foodPheromoneMap; };
+	inline const PheromoneMap &GetHomePheromoneMap() const { return *m_homePheromoneMap; };
 
 	void AddHomePheromone(int x, int y, float intensity);
 	void AddFoodPheromone(int x, int y, float intensity);
@@ -46,24 +53,10 @@ public:
 	void ClearPheromones();
 	void ClearMap();
 
-	inline double GetFoodPheromone(int x, int y) const;
-
-	inline double GetHomePheromone(int x, int y) const;
-
-	inline double UnsafeGetFoodPheromone(int x, int y) const;
-
-	inline double UnsafeGetHomePheromone(int x, int y) const;
-
-	inline const Tile &GetTile(int x, int y) const;
-
-	inline const Tile &UnsafeGetTile(int x, int y) const;
-
 	void Draw(bool h = true, bool f = true) const;
 
 	inline IntVec2 ScreenToWorld(float x, float y) const;
-
 	inline IntVec2 ScreenToWorld(Vector2 pos) const;
-
 	inline Vector2 WorldToScreen(int x, int y) const;
 
 	inline float GetScreenToWorldRatio() const;
@@ -71,9 +64,6 @@ public:
 
 	inline Vector2 GetScreenHomePos() const;
 	inline float GetScreenHomeRadius() const;
-
-	inline bool IsInBounds(int x, int y) const;
-	inline bool IsInBounds(IntVec2 pos) const;
 
 	void Reset(int width, int height);
 	void Erase();
@@ -91,6 +81,8 @@ public:
 
 	inline float GetScreenWidth() const;
 	inline float GetScreenHeight() const;
+
+	const BoundsChecker2D &BoundsChecker() const { return *m_boundsChecker; }
 
 private:
 	inline int ToMapIndex(int x, int y) const;
@@ -111,13 +103,10 @@ private:
 
 	// -------------
 
-	Tile **m_worldMap;
-
 	double m_homePheromoneEvaporationRate;
 	double m_foodPheromoneEvaporationRate;
 
-	std::unique_ptr<ColorMap> m_tilesColorMap;
-	std::unique_ptr<ColorMap> m_pheromonesColorMap;
+	std::unique_ptr<TileMap> m_tileMap;
 
 	std::unique_ptr<PheromoneMap> m_homePheromoneMap;
 	std::unique_ptr<PheromoneMap> m_foodPheromoneMap;
@@ -133,8 +122,6 @@ private:
 	// -------------
 
 	Color m_homeColor;
-	Color m_tileColors[k_tilesAmount];
-	int   m_tileDefaultAmount[k_tilesAmount];
 
 	int m_collectedFoodAmount = 0;
 	int m_deliveredFoodAmount = 0;
@@ -143,40 +130,9 @@ private:
 	int m_remainingFoodAmount = 0;
 
 	std::vector<IntVec2> m_homeTilePositions;
+
+	std::unique_ptr<BoundsChecker2D> m_boundsChecker;
 };
-
-double World::GetFoodPheromone(int x, int y) const
-{
-	return m_foodPheromoneMap->Get(x, y);
-//	return IsInBounds(x, y) ? m_foodPheromoneMap[y][x] : 0;
-}
-
-double World::GetHomePheromone(int x, int y) const
-{
-	return m_homePheromoneMap->Get(x, y);
-//	return IsInBounds(x, y) ? m_homePheromoneMap[y][x] : 0;
-}
-
-
-double World::UnsafeGetFoodPheromone(int x, int y) const
-{
-	return m_foodPheromoneMap->UnsafeGet(x, y);
-}
-
-double World::UnsafeGetHomePheromone(int x, int y) const
-{
-	return m_homePheromoneMap->UnsafeGet(x, y);
-}
-
-const World::Tile &World::GetTile(int x, int y) const
-{
-	return IsInBounds(x, y) ? m_worldMap[y][x] : m_worldMap[0][0];
-}
-
-const World::Tile &World::UnsafeGetTile(int x, int y) const
-{
-	return m_worldMap[y][x];
-}
 
 IntVec2 World::ScreenToWorld(float x, float y) const
 {
@@ -211,16 +167,6 @@ Vector2 World::GetScreenHomePos() const
 float World::GetScreenHomeRadius() const
 {
 	return m_screenHomeRadius;
-}
-
-bool World::IsInBounds(int x, int y) const
-{
-	return x >= 0 && x < m_width && y >= 0 && y < m_height;
-}
-
-bool World::IsInBounds(IntVec2 pos) const
-{
-	return IsInBounds(pos.x, pos.y);
 }
 
 void World::IncDeliveredFoodCount()

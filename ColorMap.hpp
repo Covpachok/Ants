@@ -9,7 +9,7 @@
 class ColorMap
 {
 public:
-	ColorMap(size_t width, size_t height, float screenToMapRatio, const Color &defaultColor);
+	ColorMap(size_t width, size_t height, const Color &defaultColor);
 	~ColorMap();
 
 	void Update();
@@ -40,12 +40,12 @@ private:
 	float m_screenToMapRatio;
 
 	Color m_defaultColor;
-	Color m_errorColor{255, 192, 192, 255};
+	Color m_errorColor = BLACK;
 
-	Texture m_texture{};
+	Texture m_texture;
 	Color   *m_colors;
 
-	Rectangle m_drawSrc{}, m_drawDest{};
+	Rectangle m_drawSrc, m_drawDest;
 };
 
 inline void ColorMap::UpdatePixel(const IntVec2 &pos)

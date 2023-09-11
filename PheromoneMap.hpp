@@ -15,7 +15,7 @@ class ColorMap;
 class PheromoneMap
 {
 public:
-	PheromoneMap(size_t width, size_t height, float screenToMapRatio, float evaporationRate, Color pheromoneColor);
+	PheromoneMap(size_t width, size_t height, float evaporationRate, Color pheromoneColor);
 
 	void Update();
 
@@ -34,6 +34,9 @@ public:
 	inline float UnsafeGet(const IntVec2 &pos) const;
 
 	void Draw() const;
+
+private:
+	void Evaporate();
 
 private:
 	int m_width, m_height;

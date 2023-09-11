@@ -1,17 +1,21 @@
 #include "ColorMap.hpp"
 #include "BoundsChecker.hpp"
+#include "Settings.hpp"
 
-ColorMap::ColorMap(size_t width, size_t height, float screenToMapRatio, const Color &defaultColor)
+ColorMap::ColorMap(size_t width, size_t height, const Color &defaultColor)
 		:
-		m_width(static_cast<int>(width)), m_height(static_cast<int>(height)), m_size(m_width * m_height),
-		m_screenToMapRatio(screenToMapRatio), m_defaultColor(defaultColor),
-		m_drawSrc{0, 0,
-		          static_cast<float>(m_width),
-		          static_cast<float>(m_height)},
-		m_drawDest{0, 0,
-		           static_cast<float>(m_width) * m_screenToMapRatio,
-		           static_cast<float>(m_height) * m_screenToMapRatio}
+		m_width(static_cast<int>(width)), m_height(static_cast<int>(height)),
+		m_size(m_width * m_height), m_defaultColor(defaultColor)
 {
+	m_screenToMapRatio = Settings::Instance().GetWorldSettings().screenToMapRatio;
+
+	m_drawSrc  = {0, 0,
+	              static_cast<float>(m_width),
+	              static_cast<float>(m_height)};
+	m_drawDest = {0, 0,
+	              static_cast<float>(m_width) * m_screenToMapRatio,
+	              static_cast<float>(m_height) * m_screenToMapRatio};
+
 	Image image = GenImageColor(m_width, m_height, defaultColor);
 
 	m_texture = LoadTextureFromImage(image);
@@ -33,7 +37,7 @@ void ColorMap::Update()
 
 void ColorMap::Clear()
 {
-	for(int i = 0; i < m_size; ++i)
+	for ( int i = 0; i < m_size; ++i )
 	{
 		m_colors[i] = m_defaultColor;
 	}

@@ -8,8 +8,12 @@
 
 #include <json.hpp>
 
+#include "IntVec.hpp"
+#include "Tile.hpp"
+
 constexpr int k_tilesAmount = 3;
 
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(IntVec2, x, y)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Color, r, g, b, a)
 
 struct AntsSettings
@@ -42,16 +46,24 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntsSettings,
                                    antDefaultColor,
                                    antWithFoodColor)
 
+enum class MapGenSettings
+{
+	None, FoodOnly, WallsOnly, FoodAndWalls, Amount
+};
+
+NLOHMANN_JSON_SERIALIZE_ENUM(MapGenSettings, {
+	{ MapGenSettings::None, "none" },
+	{ MapGenSettings::FoodOnly, "foodOnly" },
+	{ MapGenSettings::WallsOnly, "wallsOnly" },
+	{ MapGenSettings::FoodAndWalls, "foodAndWalls" },
+	{ MapGenSettings::Amount, "amount" }
+})
+
 struct WorldSettings
 {
 	int   mapWidth         = 1280 / 3;
 	int   mapHeight        = 720 / 3;
 	float screenToMapRatio = 3.f;
-
-	enum MapGenSettings
-	{
-		None, FoodOnly, WallsOnly, FoodAndWalls, Amount
-	};
 
 	Color foodPheromoneColor = {0, 255, 0, 0};
 	Color homePheromoneColor = {0, 0, 255, 0};
@@ -60,8 +72,13 @@ struct WorldSettings
 	                                   {0,   255, 64,  255},
 	                                   {128, 128, 128, 255}};
 
+	std::array<Color, static_cast<size_t>(TileType::Amount)> tileDefaultColors = {
+			{{0, 0, 0, 255}, {128, 128, 128, 255}, {0, 255, 0, 255}, {0, 0, 255, 255}}};
+
 	// Why? Because.
 	int tileDefaultAmount[k_tilesAmount] = {0, 30, 0};
+
+	int foodDefaultAmount = 30;
 
 	float homePheromoneEvaporationRate = 0.008f;
 	float foodPheromoneEvaporationRate = 0.008f;
@@ -80,11 +97,11 @@ struct WorldSettings
 
 	MapGenSettings mapGenSettings = MapGenSettings::FoodAndWalls;
 
-	int mapGenFoodLowThreshold  = 0;
-	int mapGenFoodHighThreshold = 64;
+	uint8_t mapGenFoodLowThreshold  = 0;
+	uint8_t mapGenFoodHighThreshold = 64;
 
-	int mapGenWallLowThreshold  = 160;
-	int mapGenWallHighThreshold = 255;
+	uint8_t mapGenWallLowThreshold  = 160;
+	uint8_t mapGenWallHighThreshold = 255;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldSettings,
@@ -120,6 +137,8 @@ public:
 		assert(m_instance);
 		m_instance = this;
 	}
+
+	static const Settings &Instance() { return *m_instance; }
 
 	const AntsSettings &GetAntsSettings() const
 	{

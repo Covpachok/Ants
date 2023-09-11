@@ -4,7 +4,11 @@
 #include <raylib.h>
 
 #include "IntVec.hpp"
-#include "World.hpp"
+
+class World;
+class PheromoneMap;
+class Ant;
+class TileMap;
 
 class Nest
 {
@@ -14,18 +18,20 @@ public:
 	void Update(float delta);
 	void Draw() const;
 
-	void Relocate(const IntVec2 &newPos);
+	void Relocate(const IntVec2 &newPos, TileMap &tileMap);
 
 	IntVec2 GetPos() const;
 	IntVec2 GetScreenPos() const;
 
 private:
-	uint32_t m_id;
+	int m_id;
 
 	IntVec2 m_pos;
 	int     m_size;
 
-	uint32_t m_foodAmount;
+	int m_foodStoraged;
+
+//	std::vector<
 };
 
 

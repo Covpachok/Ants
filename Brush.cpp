@@ -1,12 +1,12 @@
 #include "Brush.hpp"
 
 
-void PaintPoint(World &world, Brush &brush, int x, int y)
+void PaintPoint(TileMap &tileMap, Brush &brush, int x, int y)
 {
-	world.SetTile(x, y, brush.GetPaintType());
+	tileMap.SetTile({x, y}, brush.GetPaintType());
 }
 
-void PaintSquare(World &world, Brush &brush, int x, int y)
+void PaintSquare(TileMap &tileMap, Brush &brush, int x, int y)
 {
 	int radius = brush.GetBrushSize();
 
@@ -14,12 +14,12 @@ void PaintSquare(World &world, Brush &brush, int x, int y)
 	{
 		for ( int j = -radius; j <= radius; ++j )
 		{
-			world.SetTile(j + x, i + y, brush.GetPaintType());
+			tileMap.SetTile({j + x, i + y}, brush.GetPaintType());
 		}
 	}
 }
 
-void PaintRound(World &world, Brush &brush, int x, int y)
+void PaintRound(TileMap &tileMap, Brush &brush, int x, int y)
 {
 	int radius        = brush.GetBrushSize();
 	int radiusSquared = radius * radius;
@@ -30,7 +30,7 @@ void PaintRound(World &world, Brush &brush, int x, int y)
 		{
 			if ( i * i + j * j <= radiusSquared )
 			{
-				world.SetTile(j + x, i + y, brush.GetPaintType());
+				tileMap.SetTile({j + x, i + y}, brush.GetPaintType());
 			}
 		}
 	}
@@ -38,10 +38,11 @@ void PaintRound(World &world, Brush &brush, int x, int y)
 
 void Brush::Paint(World &world, int x, int y)
 {
-	m_paintFunc(world, *this, x, y);
+	auto &tileMap = world.GetTileMap();
+	m_paintFunc(tileMap, *this, x, y);
 }
 
-const std::function<void(World &, Brush &, int x, int y)> k_paintFuncitons[Brush::Amount] = {PaintPoint, PaintSquare,
+const std::function<void(TileMap &, Brush &, int x, int y)> k_paintFuncitons[Brush::Amount] = {PaintPoint, PaintSquare,
                                                                                              PaintRound};
 
 void Brush::OnBrushChanged()

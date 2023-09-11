@@ -2,6 +2,7 @@
 #include "World.hpp"
 #include "Settings.hpp"
 #include "Random.hpp"
+#include "TileMap.hpp"
 
 #include "omp.h"
 
@@ -68,6 +69,8 @@ void Ant::Update(const float delta, const World &world)
 
 void Ant::PostUpdate(const float delta, World &world)
 {
+	TileMap &tileMap = world.GetTileMap();
+
 	if ( m_pheromoneSpawnTimer.IsElapsed())
 	{
 		SpawnPheromone(world);
@@ -76,13 +79,13 @@ void Ant::PostUpdate(const float delta, World &world)
 
 	if ( m_shouldDecreaseTile )
 	{
-		if ( world.GetTile(m_tileToDecreasePos.x, m_tileToDecreasePos.y).type == World::Food )
+		if ( tileMap.GetTileType(m_tileToDecreasePos) == TileType::Food )
 		{
 			m_gotFood = true;
 		}
 
 		m_shouldDecreaseTile = false;
-		world.DecreaseTile(m_tileToDecreasePos.x, m_tileToDecreasePos.y);
+		tileMap.TakeFood(m_tileToDecreasePos);
 	}
 
 	if ( m_deliveredFood )
@@ -136,6 +139,8 @@ void Ant::SpawnPheromone(World &world)
 
 void Ant::CheckCollisions(const World &world)
 {
+	const TileMap &tileMap = world.GetTileMap();
+
 	/* Home collision */
 	const Vector2 homePos    = world.GetScreenHomePos();
 	const float   homeRadius = world.GetScreenHomeRadius();
@@ -153,9 +158,9 @@ void Ant::CheckCollisions(const World &world)
 	}
 
 	/* Food collision */
-	const IntVec2   checkMapPos = world.ScreenToWorld(m_pos.x, m_pos.y);
-	World::TileType tileType    = world.GetTile(checkMapPos.x, checkMapPos.y).type;
-	if ( tileType == World::Food )
+	const IntVec2 checkMapPos = world.ScreenToWorld(m_pos.x, m_pos.y);
+	TileType      tileType    = tileMap.GetTileType(checkMapPos);
+	if ( tileType == TileType::Food )
 	{
 		m_pos = m_prevPos;
 
@@ -171,14 +176,14 @@ void Ant::CheckCollisions(const World &world)
 	}
 
 	/* Wall collision */
-	if ( tileType == World::Wall )
+	if ( tileType == TileType::Wall )
 	{
 		m_pos = m_prevPos;
 
-		const IntVec2   prevMapPos   = world.ScreenToWorld(m_prevPos.x, m_prevPos.y);
-		World::TileType prevTileType = world.GetTile(prevMapPos.x, prevMapPos.y).type;
+		const IntVec2 prevMapPos   = world.ScreenToWorld(m_prevPos.x, m_prevPos.y);
+		TileType      prevTileType = tileMap.GetTileType(prevMapPos);
 
-		if ( prevTileType == World::Wall )
+		if ( prevTileType == TileType::Wall )
 		{
 			m_pos = homePos;
 		}
@@ -190,6 +195,10 @@ void Ant::CheckCollisions(const World &world)
 
 void Ant::CheckInFov(const World &world)
 {
+	auto &tileMap          = world.GetTileMap();
+	auto &foodPheromoneMap = world.GetFoodPheromoneMap();
+	auto &homePheromoneMap = world.GetHomePheromoneMap();
+
 	// Caching rotations to improve performance
 	float     checkRotations[3][2];
 	for ( int i = -1; i <= 1; ++i )
@@ -220,7 +229,7 @@ void Ant::CheckInFov(const World &world)
 	int prevSide = 0;
 	int turnSide = 0;
 
-	World::TileType tileType = World::None;
+	TileType tileType = TileType::Empty;
 
 	float screenToMapRatio = world.GetScreenToWorldRatio();
 
@@ -237,22 +246,18 @@ void Ant::CheckInFov(const World &world)
 			checkPos.y = m_pos.y + checkRotations[side + 1][1] * multiplier;
 
 			const IntVec2 checkMapPos = world.ScreenToWorld(checkPos.x, checkPos.y);
-			if ( !world.IsInBounds(checkMapPos))
-			{
-				continue;
-			}
 
-			tileType = world.UnsafeGetTile(checkMapPos.x, checkMapPos.y).type;
+			tileType = tileMap.GetTileType(checkMapPos);
 
 			// Avoid walls if they are close
-			if ( tileType == World::Wall && j < 3 )
+			if ( tileType == TileType::Wall && j < 3 )
 			{
 				turnSide    = -side;
 				foundObject = true;
 				break;
 			}
 				// Go for the food
-			else if ( tileType == World::Food && !m_gotFood )
+			else if ( tileType == TileType::Food && !m_gotFood )
 			{
 				turnSide    = side;
 				foundObject = true;
@@ -267,12 +272,12 @@ void Ant::CheckInFov(const World &world)
 			// Look for home pheromones if ant have food
 			if ( m_gotFood )
 			{
-				checkedPheromone = world.UnsafeGetHomePheromone(checkMapPos.x, checkMapPos.y);
+				checkedPheromone = homePheromoneMap.Get(checkMapPos);
 			}
 				// Look for food pheromones if ant doesn't have food
 			else
 			{
-				checkedPheromone = world.UnsafeGetFoodPheromone(checkMapPos.x, checkMapPos.y);
+				checkedPheromone = foodPheromoneMap.Get(checkMapPos);
 			}
 
 			if ( checkedPheromone > strongestPheromone )

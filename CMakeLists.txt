@@ -22,8 +22,6 @@ set(SOURCE_FILES
         Settings.cpp
         Nest.cpp
         Nest.hpp
-        Map.cpp
-        Map.hpp
         PheromoneMap.cpp
         PheromoneMap.hpp
         TileMap.cpp
@@ -33,7 +31,7 @@ set(SOURCE_FILES
         Utils/BoundsChecker.hpp
         ColorMap.cpp
         ColorMap.hpp
-        )
+        AntColony.cpp AntColony.hpp)
 
 set(IMGUI_FOLDER "libs/imgui")
 

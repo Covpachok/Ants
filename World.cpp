@@ -16,6 +16,8 @@ void World::Init()
 	m_width  = m_worldSettings->mapWidth;
 	m_height = m_worldSettings->mapHeight;
 
+	m_boundsChecker = std::make_unique<BoundsChecker2D>(0, m_width, 0, m_height);
+
 	m_screenToWorldRatio        = m_worldSettings->screenToMapRatio;
 	m_screenToWorldInverseRatio = 1.f / m_screenToWorldRatio;
 
@@ -24,29 +26,10 @@ void World::Init()
 
 	// -------------
 
-	m_tilesColorMap      = std::make_unique<ColorMap>(m_width, m_height, m_screenToWorldRatio,
-	                                                  Color{0, 0, 0, 0});
-	m_pheromonesColorMap = std::make_unique<ColorMap>(m_width, m_height, m_screenToWorldRatio,
-	                                                  BLACK);
-	m_worldMap = new Tile *[m_height];
 
-	for ( int i = 0; i < m_height; ++i )
-	{
-		m_worldMap[i] = new Tile[m_width];
-		for ( int j = 0; j < m_width; ++j )
-		{
-			m_worldMap[i][j].type   = TileType::None;
-			m_worldMap[i][j].amount = 0;
-		}
-	}
+	m_tileMap = std::make_unique<TileMap>(m_width, m_height);
 
 	// -------------
-
-	for ( int i = 0; i < k_tilesAmount; ++i )
-	{
-		m_tileColors[i]        = m_worldSettings->tileColors[i];
-		m_tileDefaultAmount[i] = m_worldSettings->tileDefaultAmount[i];
-	}
 
 	// -------------
 
@@ -54,10 +37,12 @@ void World::Init()
 	m_foodPheromoneEvaporationRate = m_worldSettings->foodPheromoneEvaporationRate;
 
 
-	m_homePheromoneMap = std::make_unique<PheromoneMap>(m_width, m_height, m_screenToWorldRatio,
-	                                                    m_homePheromoneEvaporationRate, m_worldSettings->homePheromoneColor);
-	m_foodPheromoneMap = std::make_unique<PheromoneMap>(m_width, m_height, m_screenToWorldRatio,
-	                                                    m_foodPheromoneEvaporationRate, m_worldSettings->foodPheromoneColor);
+	m_homePheromoneMap = std::make_unique<PheromoneMap>(m_width, m_height,
+	                                                    m_homePheromoneEvaporationRate,
+	                                                    m_worldSettings->homePheromoneColor);
+	m_foodPheromoneMap = std::make_unique<PheromoneMap>(m_width, m_height,
+	                                                    m_foodPheromoneEvaporationRate,
+	                                                    m_worldSettings->foodPheromoneColor);
 
 	// -------------
 
@@ -113,69 +98,9 @@ void World::Update(double delta)
 	m_foodPheromoneMap->Update();
 }
 
-void World::SetTile(int x, int y, TileType type)
-{
-	if ( !IsInBounds(x, y))
-	{
-		return;
-	}
-
-	Tile prevTile = m_worldMap[y][x];
-	m_worldMap[y][x].type   = type;
-	m_worldMap[y][x].amount = m_tileDefaultAmount[type];
-
-	int mapIndex = ToMapIndex(x, y);
-//	m_worldColorMap[mapIndex] = m_tileColors[type];
-	m_tilesColorMap->Set(mapIndex, m_tileColors[type]);
-	if ( type != None )
-	{
-		m_homePheromoneMap->Set(x, y, 0);
-		m_foodPheromoneMap->Set(x, y, 0);
-	}
-
-	if ( type == Food )
-	{
-		if ( prevTile.type == Food )
-		{
-			m_totalFoodAmount += m_tileDefaultAmount[Food] - prevTile.amount;
-			m_remainingFoodAmount += m_tileDefaultAmount[Food] - prevTile.amount;
-		}
-		else
-		{
-			m_totalFoodAmount += m_tileDefaultAmount[Food];
-			m_remainingFoodAmount += m_tileDefaultAmount[Food];
-		}
-	}
-
-//	UpdateTexture(m_worldTexture, m_worldColorMap);
-//	UpdateTextureRec(m_worldTexture, {static_cast<float>(x), static_cast<float>(y), 1, 1}, &m_tileColors[type]);
-	m_tilesColorMap->UpdatePixel(x, y);
-}
-
-void World::DecreaseTile(int x, int y)
-{
-	if ( !IsInBounds(x, y))
-	{
-		return;
-	}
-
-	--m_worldMap[y][x].amount;
-
-	if ( m_worldMap[y][x].type == Food && m_worldMap[y][x].amount >= 0 )
-	{
-		--m_remainingFoodAmount;
-		++m_collectedFoodAmount;
-	}
-
-	if ( m_worldMap[y][x].amount <= 0 )
-	{
-		SetTile(x, y, None);
-	}
-}
-
 void World::AddHomePheromone(int x, int y, float intensity)
 {
-	if ( m_worldMap[y][x].type != None )
+	if ( m_tileMap->GetTileType({x, y}) != TileType::Empty )
 	{
 		return;
 	}
@@ -184,7 +109,7 @@ void World::AddHomePheromone(int x, int y, float intensity)
 
 void World::AddFoodPheromone(int x, int y, float intensity)
 {
-	if ( m_worldMap[y][x].type != None )
+	if ( m_tileMap->GetTileType({x, y}) != TileType::Empty )
 	{
 		return;
 	}
@@ -194,36 +119,13 @@ void World::AddFoodPheromone(int x, int y, float intensity)
 
 void World::ClearPheromones()
 {
-	for ( int y = 0; y < m_height; ++y )
-	{
-		const int rowIndex = y * m_width;
-		for ( int x        = 0; x < m_width; ++x )
-		{
-			m_homePheromoneMap->Set(x, y, 0);
-			m_foodPheromoneMap->Set(x, y, 0);
-
-			const int index = rowIndex + x;
-			m_pheromonesColorMap->GetMutable(index).a = 0;
-		}
-	}
-
-	m_pheromonesColorMap->Update();
+	m_homePheromoneMap->Clear();
+	m_foodPheromoneMap->Clear();
 }
 
 void World::ClearMap()
 {
-	for ( int y = 0; y < m_height; ++y )
-	{
-		for ( int x = 0; x < m_width; ++x )
-		{
-			m_worldMap[y][x].type   = None;
-			m_worldMap[y][x].amount = 0;
-			m_tilesColorMap->Set(x, y, m_tileColors[None]);
-//			m_worldColorMap[ToMapIndex(x, y)] = m_tileColors[None];
-		}
-	}
-
-	m_tilesColorMap->Update();
+	m_tileMap->Clear();
 }
 
 void World::Draw(bool h, bool f) const
@@ -231,6 +133,7 @@ void World::Draw(bool h, bool f) const
 	DrawRectangle(-5, -5, m_screenWidth + 10, m_screenHeight + 10, RED);
 	DrawRectangle(0, 0, m_screenWidth, m_screenHeight, BLACK);
 
+	m_tileMap->Draw();
 	if ( h )
 	{
 		m_homePheromoneMap->Draw();
@@ -239,7 +142,6 @@ void World::Draw(bool h, bool f) const
 	{
 		m_foodPheromoneMap->Draw();
 	}
-	m_tilesColorMap->Draw();
 
 	DrawCircleSector(m_screenHomePos, m_screenHomeRadius, 0.f, 360.f, 18, m_homeColor);
 }
@@ -247,13 +149,7 @@ void World::Draw(bool h, bool f) const
 void World::Erase()
 {
 	m_homeTilePositions.clear();
-
-	for ( int y = 0; y < m_height; ++y )
-	{
-		delete[] m_worldMap[y];
-	}
-
-	delete[] m_worldMap;
+	// ??
 }
 
 void World::Reset(int width, int height)
@@ -270,7 +166,7 @@ void World::GenerateMap()
 		if ( pixel.r >= m_worldSettings->mapGenFoodLowThreshold &&
 		     pixel.r <= m_worldSettings->mapGenFoodHighThreshold )
 		{
-			SetTile(x, y, Food);
+			m_tileMap->SetTile({x, y}, TileType::Food);
 		}
 	};
 
@@ -278,7 +174,7 @@ void World::GenerateMap()
 		if ( pixel.r >= m_worldSettings->mapGenWallLowThreshold &&
 		     pixel.r <= m_worldSettings->mapGenWallHighThreshold )
 		{
-			SetTile(x, y, Wall);
+			m_tileMap->SetTile({x, y}, TileType::Wall);
 		}
 	};
 
@@ -289,15 +185,15 @@ void World::GenerateMap()
 
 	switch ( m_worldSettings->mapGenSettings )
 	{
-		case WorldSettings::MapGenSettings::FoodOnly:
+		case MapGenSettings::FoodOnly:
 			genFunc = foodOnly;
 			break;
 
-		case WorldSettings::MapGenSettings::WallsOnly:
+		case MapGenSettings::WallsOnly:
 			genFunc = wallsOnly;
 			break;
 
-		case WorldSettings::MapGenSettings::FoodAndWalls:
+		case MapGenSettings::FoodAndWalls:
 			genFunc = foodAndWalls;
 			break;
 
