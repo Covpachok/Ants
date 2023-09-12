@@ -88,9 +88,13 @@ void Simulation::HandleInput()
 			auto worldPos = m_world->ScreenToWorld(mouseWorldPos);
 			if ( m_world->BoundsChecker().IsInBounds(worldPos))
 			{
-				auto homePosRef = m_settings.GetMutableWorldSettings().homePos;
-				homePosRef[0] = worldPos.x;
-				homePosRef[1] = worldPos.y;
+				auto &homePos = m_settings.GetMutableWorldSettings().homePos;
+				homePos       = worldPos;
+
+				if(m_spawnNewNest)
+				{
+					m_world->AddNest(homePos);
+				}
 
 				m_choosingHomePos = false;
 			}
@@ -117,7 +121,7 @@ void Simulation::HandleInput()
 	{
 		auto pos = m_world->ScreenToWorld(mouseWorldPos.x, mouseWorldPos.y);
 
-		m_brush.Paint(*m_world, pos.x, pos.y);
+		m_brush.Paint(m_world->GetTileMap(), pos.x, pos.y);
 	}
 
 	if ( IsKeyPressed(KEY_SPACE))
@@ -286,6 +290,7 @@ void HelpTooltip(const std::string &text)
 void Simulation::ShowGui()
 {
 	ImGuiIO &io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	m_shouldHandleInput = !( io.WantCaptureMouse || io.WantCaptureKeyboard );
 
 	rlImGuiBegin();
@@ -335,7 +340,7 @@ void Simulation::SettingsGui()
 			ImGui::SeparatorText("Brush settings");
 			{
 				const char *brushTitles[Brush::BrushType::Amount] = {"Point", "Square", "Round"};
-				const char *paintTitles[Brush::BrushType::Amount] = {"Erase", "Food", "Wall"};
+				const char *paintTitles[TileType::Amount]         = {"Empty", "Wall", "Food", "Nest"};
 
 				int              size      = m_brush.GetBrushSize();
 				Brush::BrushType brushType = m_brush.GetBrushType();
@@ -492,8 +497,8 @@ void Simulation::AdvancedSettingsGui()
 				{
 					using namespace ColorConvert;
 
-					ImGuiRlColorEdit4("Food", worldSettings.tileColors[TileType::Food]);
-					ImGuiRlColorEdit4("Wall", worldSettings.tileColors[TileType::Wall]);
+//					ImGuiRlColorEdit4("Food", worldSettings.tileColors[TileType::Food]);
+//					ImGuiRlColorEdit4("Wall", worldSettings.tileColors[TileType::Wall]);
 
 					ImGuiRlColorEdit4("Home pheromone", worldSettings.homePheromoneColor);
 					ImGuiRlColorEdit4("Food pheromone", worldSettings.foodPheromoneColor);
@@ -503,7 +508,7 @@ void Simulation::AdvancedSettingsGui()
 
 				ImGui::SeparatorText("Tiles");
 
-				ImGui::SliderInt("Food amount per tile", &worldSettings.tileDefaultAmount[1], 1, 512);
+				ImGui::SliderInt("Food amount per tile", &worldSettings.foodDefaultAmount, 1, 100);
 
 				ImGui::SeparatorText("Pheromones");
 
@@ -519,13 +524,17 @@ void Simulation::AdvancedSettingsGui()
 
 				ImGui::SeparatorText("Home");
 
-				ImGui::SliderInt("Radius", &worldSettings.homeRadius, 2, 10);
-				ImGui::Checkbox("Centered position", &worldSettings.centeredHomePos);
-				if ( !worldSettings.centeredHomePos )
 				{
-					ImGui::Separator();
-					ImGui::InputInt2("Pos", worldSettings.homePos);
+					ImGui::SliderInt("Radius", &worldSettings.homeRadius, 2, 10);
+
+					IntVec2 &homePos = worldSettings.homePos;
+					int     pos[2]   = {homePos.x, homePos.y};
+					ImGui::InputInt2("Pos", pos);
+					homePos.x = pos[0];
+					homePos.y = pos[1];
+
 					ImGui::Checkbox("Choose by mouse click", &m_choosingHomePos);
+					ImGui::Checkbox("Spawn new nest", &m_spawnNewNest);
 				}
 
 				ImGui::PopItemWidth();

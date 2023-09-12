@@ -1,8 +1,6 @@
-#include <omp.h>
-#include <iostream>
-
 #include "PheromoneMap.hpp"
-#include "ColorMap.hpp"
+
+#include <omp.h>
 
 constexpr float k_pheromoneMinIntensity = 0.f;
 constexpr float k_pheromoneMaxIntensity = 255.f;
@@ -49,13 +47,15 @@ void PheromoneMap::Update()
 
 void PheromoneMap::Clear()
 {
-	for ( auto &row: m_pheromones )
+	for ( int y = 0; y < m_height; ++y)
 	{
-		for ( auto &pheromone: row )
+		for (int x = 0; x < m_width; ++x)
 		{
-			pheromone = 0.f;
+			m_pheromones[y][x] = 0.f;
+			UpdateColor({x, y});
 		}
 	}
+	m_colorMap->Update();
 }
 
 void PheromoneMap::Add(int x, int y, float intensity)
@@ -92,7 +92,12 @@ void PheromoneMap::Evaporate()
 		for ( int x = 0; x < m_width; ++x )
 		{
 			m_pheromones[y][x] = std::max(m_pheromones[y][x] - m_evaporationRate, k_pheromoneMinIntensity);
-			m_colorMap->GetMutable(x, y).a = static_cast<unsigned char>(m_pheromones[y][x]);
+			UpdateColor({x, y});
 		}
 	}
+}
+
+void PheromoneMap::UpdateColor(const IntVec2 &pos)
+{
+	m_colorMap->GetMutable(pos).a = static_cast<unsigned char>(m_pheromones[pos.y][pos.x]);
 }

@@ -2,7 +2,12 @@
 #define ANTS_BRUSH_HPP
 
 #include <functional>
-#include "World.hpp"
+
+#include "Tile.hpp"
+
+class World;
+
+class TileMap;
 
 class Brush
 {
@@ -14,15 +19,12 @@ public:
 
 public:
 	explicit Brush(TileType paintType = TileType::Food, BrushType brushType = Round, int brushSize = 5) :
-			m_paintType(paintType), m_brushType(brushType), m_brushSize(brushSize)
-	{
-		OnBrushChanged();
-	}
+			m_paintType(paintType), m_brushType(brushType), m_brushSize(brushSize) {}
 
-	void Paint(World &world, int x, int y);
+	void Paint(TileMap &tileMap, int x, int y);
 
 	void SetPaintType(TileType type) { m_paintType = type; }
-	void SetBrushType(BrushType type) { m_brushType = type; OnBrushChanged(); };
+	void SetBrushType(BrushType type) { m_brushType = type; }
 	void SetBrushSize(int size) { m_brushSize = size; }
 
 	TileType GetPaintType() const { return m_paintType; }
@@ -30,15 +32,14 @@ public:
 	int GetBrushSize() const { return m_brushSize; }
 
 private:
-	void OnBrushChanged();
 
 private:
-	TileType m_paintType;
-	BrushType       m_brushType;
+	TileType  m_paintType;
+	BrushType m_brushType;
 
 	int m_brushSize;
-
-	std::function<void(TileMap &, Brush &, int x, int y)> m_paintFunc;
 };
+
+using BrushType = Brush::BrushType;
 
 #endif //ANTS_BRUSH_HPP

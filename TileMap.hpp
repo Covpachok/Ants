@@ -9,7 +9,7 @@
 
 #include "Tile.hpp"
 
-class ColorMap;
+#include "ColorMap.hpp"
 
 class Nest;
 
@@ -29,6 +29,9 @@ public:
 	inline TileType GetTileType(const IntVec2 &pos) const { return GetTile(pos).GetType(); }
 
 	void Draw() const;
+
+private:
+	void UpdateColor(const IntVec2 &pos);
 
 private:
 	int m_width, m_height;

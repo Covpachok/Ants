@@ -61,22 +61,15 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MapGenSettings, {
 
 struct WorldSettings
 {
-	int   mapWidth         = 1280 / 3;
-	int   mapHeight        = 720 / 3;
+	int   mapWidth         = 1280 / 2;
+	int   mapHeight        = 720 / 2;
 	float screenToMapRatio = 3.f;
 
 	Color foodPheromoneColor = {0, 255, 0, 0};
 	Color homePheromoneColor = {0, 0, 255, 0};
 
-	Color tileColors[k_tilesAmount] = {{0,   0,   0,   0},
-	                                   {0,   255, 64,  255},
-	                                   {128, 128, 128, 255}};
-
 	std::array<Color, static_cast<size_t>(TileType::Amount)> tileDefaultColors = {
 			{{0, 0, 0, 255}, {128, 128, 128, 255}, {0, 255, 0, 255}, {0, 0, 255, 255}}};
-
-	// Why? Because.
-	int tileDefaultAmount[k_tilesAmount] = {0, 30, 0};
 
 	int foodDefaultAmount = 30;
 
@@ -85,8 +78,7 @@ struct WorldSettings
 
 	int homeRadius = 5;
 
-	bool centeredHomePos = true;
-	int  homePos[2]      = {0, 0};
+	IntVec2 homePos         = {mapWidth / 2, mapHeight / 2};
 
 	int antsAmount = 1000;
 
@@ -110,12 +102,11 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldSettings,
                                    screenToMapRatio,
                                    foodPheromoneColor,
                                    homePheromoneColor,
-                                   tileColors,
-                                   tileDefaultAmount,
+                                   tileDefaultColors,
+                                   foodDefaultAmount,
                                    homePheromoneEvaporationRate,
                                    foodPheromoneEvaporationRate,
                                    homeRadius,
-                                   centeredHomePos,
                                    homePos,
                                    antsAmount,
                                    mapGenNoiseScale,

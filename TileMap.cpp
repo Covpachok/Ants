@@ -1,6 +1,5 @@
 #include "TileMap.hpp"
 
-#include "ColorMap.hpp"
 #include "Settings.hpp"
 
 TileMap::TileMap(int width, int height) :
@@ -32,9 +31,7 @@ void TileMap::SetTile(const IntVec2 &pos, TileType newType)
 	}
 
 	m_tiles[pos.y][pos.x]->ChangeType(newType);
-	m_colorMap->Set(pos, m_tiles[pos.y][pos.x]->GetColor());
-
-	m_colorMap->UpdatePixel(pos);
+	UpdateColor(pos);
 }
 
 void TileMap::TakeFood(const IntVec2 &pos)
@@ -52,11 +49,12 @@ void TileMap::TakeFood(const IntVec2 &pos)
 
 void TileMap::Clear()
 {
-	for ( auto &row: m_tiles )
+	for ( int y = 0; y < m_height; ++y )
 	{
-		for ( auto &tile: row )
+		for ( int x = 0; x < m_width; ++x )
 		{
-			tile->ChangeType(TileType::Empty);
+			m_tiles[y][x]->ChangeType(TileType::Empty);
+			UpdateColor({x, y});
 		}
 	}
 }
@@ -64,4 +62,10 @@ void TileMap::Clear()
 void TileMap::Draw() const
 {
 	m_colorMap->Draw();
+}
+
+void TileMap::UpdateColor(const IntVec2 &pos)
+{
+	m_colorMap->Set(pos, m_tiles[pos.y][pos.x]->GetColor());
+	m_colorMap->UpdatePixel(pos);
 }

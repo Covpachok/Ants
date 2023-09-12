@@ -31,9 +31,9 @@ set(SOURCE_FILES
         Utils/BoundsChecker.hpp
         ColorMap.cpp
         ColorMap.hpp
-        AntColony.cpp AntColony.hpp)
+        AntColony.cpp AntColony.hpp Gui.cpp Gui.hpp Statistics.cpp Statistics.hpp TileMapGenerator.cpp TileMapGenerator.hpp)
 
-set(IMGUI_FOLDER "libs/imgui")
+set(IMGUI_FOLDER "libs/imgui-docking")
 
 set(IMGUI_SOURCES
         ${IMGUI_FOLDER}/imgui.cpp

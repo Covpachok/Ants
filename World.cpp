@@ -50,14 +50,7 @@ void World::Init()
 	m_homeColor.a = 255;
 
 	m_homeRadius = m_worldSettings->homeRadius;
-	if ( m_worldSettings->centeredHomePos )
-	{
-		m_homePos = {m_width / 2, m_height / 2};
-	}
-	else
-	{
-		m_homePos = {m_worldSettings->homePos[0], m_worldSettings->homePos[1]};
-	}
+	m_homePos    = m_worldSettings->homePos;
 
 	m_screenHomePos    = {static_cast<float>(m_homePos.x) * m_screenToWorldRatio,
 	                      static_cast<float>(m_homePos.y) * m_screenToWorldRatio};
@@ -80,6 +73,8 @@ void World::Init()
 	m_totalFoodAmount     = 0;
 
 	GenerateMap();
+
+	m_nests.push_back(std::make_unique<Nest>(*this));
 }
 
 World::~World()
@@ -98,25 +93,6 @@ void World::Update(double delta)
 	m_foodPheromoneMap->Update();
 }
 
-void World::AddHomePheromone(int x, int y, float intensity)
-{
-	if ( m_tileMap->GetTileType({x, y}) != TileType::Empty )
-	{
-		return;
-	}
-	m_homePheromoneMap->Add(x, y, intensity);
-}
-
-void World::AddFoodPheromone(int x, int y, float intensity)
-{
-	if ( m_tileMap->GetTileType({x, y}) != TileType::Empty )
-	{
-		return;
-	}
-
-	m_foodPheromoneMap->Add(x, y, intensity);
-}
-
 void World::ClearPheromones()
 {
 	m_homePheromoneMap->Clear();
@@ -126,6 +102,11 @@ void World::ClearPheromones()
 void World::ClearMap()
 {
 	m_tileMap->Clear();
+}
+
+void World::AddNest(const IntVec2& pos)
+{
+	m_nests.push_back(std::make_unique<Nest>(*this));
 }
 
 void World::Draw(bool h, bool f) const

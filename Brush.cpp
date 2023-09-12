@@ -1,5 +1,7 @@
 #include "Brush.hpp"
 
+#include "World.hpp"
+#include "TileMap.hpp"
 
 void PaintPoint(TileMap &tileMap, Brush &brush, int x, int y)
 {
@@ -36,16 +38,11 @@ void PaintRound(TileMap &tileMap, Brush &brush, int x, int y)
 	}
 }
 
-void Brush::Paint(World &world, int x, int y)
-{
-	auto &tileMap = world.GetTileMap();
-	m_paintFunc(tileMap, *this, x, y);
-}
 
-const std::function<void(TileMap &, Brush &, int x, int y)> k_paintFuncitons[Brush::Amount] = {PaintPoint, PaintSquare,
-                                                                                             PaintRound};
+const std::function<void(TileMap &, Brush &, int x, int y)> k_paintFunctions[Brush::Amount] = {PaintPoint, PaintSquare,
+                                                                                               PaintRound};
 
-void Brush::OnBrushChanged()
+void Brush::Paint(TileMap &tileMap, int x, int y)
 {
-	m_paintFunc = k_paintFuncitons[m_brushType];
+	k_paintFunctions[m_brushType](tileMap, *this, x, y);
 }

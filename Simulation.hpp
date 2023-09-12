@@ -64,6 +64,7 @@ private:
 	bool m_choosingHomePos = false;
 	bool m_showGui         = true;
 	bool m_paintingEnabled = true;
+	bool m_spawnNewNest    = false;
 
 	std::string m_saveFilename = "save";
 };

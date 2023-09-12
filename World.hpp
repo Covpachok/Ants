@@ -1,38 +1,27 @@
 #ifndef ANTS_WORLD_HPP
 #define ANTS_WORLD_HPP
 
-#include <iostream>
-#include <utility>
-
-#include <vector>
-
 #include <raylib.h>
 #include <rlgl.h>
+
+#include <iostream>
+#include <utility>
+#include <vector>
 #include <memory>
+#include <list>
+
+#include "IntVec.hpp"
+#include "BoundsChecker.hpp"
 
 #include "Settings.hpp"
-#include "IntVec.hpp"
-#include "ColorMap.hpp"
-#include "PheromoneMap.hpp"
 #include "TileMap.hpp"
-#include "BoundsChecker.hpp"
+#include "Pheromonemap.hpp"
+#include "Nest.hpp"
 
 class World
 {
 public:
-//	enum TileType
-//	{
-//		None, Food, Wall, Amount
-//	};
-//
-//	struct Tile
-//	{
-//		TileType type   = None;
-//		int      amount = 0;
-//	};
-
-public:
-	World(const Settings &settings);
+	explicit World(const Settings &settings);
 	~World();
 
 	void Init();
@@ -47,20 +36,17 @@ public:
 	inline const PheromoneMap &GetFoodPheromoneMap() const { return *m_foodPheromoneMap; };
 	inline const PheromoneMap &GetHomePheromoneMap() const { return *m_homePheromoneMap; };
 
-	void AddHomePheromone(int x, int y, float intensity);
-	void AddFoodPheromone(int x, int y, float intensity);
-
 	void ClearPheromones();
 	void ClearMap();
+
+	void AddNest(const IntVec2& pos);
 
 	void Draw(bool h = true, bool f = true) const;
 
 	inline IntVec2 ScreenToWorld(float x, float y) const;
 	inline IntVec2 ScreenToWorld(Vector2 pos) const;
-	inline Vector2 WorldToScreen(int x, int y) const;
 
 	inline float GetScreenToWorldRatio() const;
-	inline float GetScreenToWorldInverseRatio() const;
 
 	inline Vector2 GetScreenHomePos() const;
 	inline float GetScreenHomeRadius() const;
@@ -132,6 +118,8 @@ private:
 	std::vector<IntVec2> m_homeTilePositions;
 
 	std::unique_ptr<BoundsChecker2D> m_boundsChecker;
+
+	std::list<std::unique_ptr<Nest>> m_nests;
 };
 
 IntVec2 World::ScreenToWorld(float x, float y) const
@@ -144,19 +132,9 @@ IntVec2 World::ScreenToWorld(Vector2 pos) const
 	return ScreenToWorld(pos.x, pos.y);
 }
 
-Vector2 World::WorldToScreen(int x, int y) const
-{
-	return {x * m_screenToWorldRatio, y * m_screenToWorldRatio};
-}
-
 float World::GetScreenToWorldRatio() const
 {
 	return m_screenToWorldRatio;
-}
-
-float World::GetScreenToWorldInverseRatio() const
-{
-	return m_screenToWorldInverseRatio;
 }
 
 Vector2 World::GetScreenHomePos() const

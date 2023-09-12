@@ -6,32 +6,42 @@
 #include "IntVec.hpp"
 
 class World;
+
 class PheromoneMap;
+
 class Ant;
+
 class TileMap;
 
 class Nest
 {
 public:
-	Nest(const IntVec2 &pos, const World &world);
+	explicit Nest(World &world);
+	Nest(World &world, const IntVec2& pos);
 
-	void Update(float delta);
+	void Update(float delta) {};
 	void Draw() const;
 
 	void Relocate(const IntVec2 &newPos, TileMap &tileMap);
 
-	IntVec2 GetPos() const;
-	IntVec2 GetScreenPos() const;
+	const IntVec2 &GetPos() const { return m_pos; };
+	const Vector2 &GetScreenPos() const { return m_screenPos; };
 
 private:
-	int m_id;
+
+
+private:
+	int m_colonyId;
 
 	IntVec2 m_pos;
-	int     m_size;
+	Vector2 m_screenPos;
 
-	int m_foodStoraged;
+	int   m_size;
+	float m_screenSize;
 
-//	std::vector<
+	Color m_color;
+
+	int m_foodStored;
 };
 
 

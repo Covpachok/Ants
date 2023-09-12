@@ -4,7 +4,7 @@
 
 #include "Settings.hpp"
 
-const std::bitset<Tile::Amount> k_tilesPassability = 0b1100;
+const std::bitset<Tile::Amount> k_tilesPassability = 0b1001;
 
 Tile::Tile(const IntVec2 &pos, TileType type) :
 		m_pos(pos)
