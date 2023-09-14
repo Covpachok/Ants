@@ -11,40 +11,8 @@
 #include "IntVec.hpp"
 #include "Tile.hpp"
 
-constexpr int k_tilesAmount = 3;
-
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(IntVec2, x, y)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Color, r, g, b, a)
-
-struct AntsSettings
-{
-	float antMovementSpeed          = 40;
-	float antRotationSpeed          = 10;
-	float antRandomRotation         = 0.3;
-	int   antFovRange               = 12;
-	float foodPheromoneStrengthLoss = 0.005;
-	float homePheromoneStrengthLoss = 0.005;
-	float foodPheromoneIntensity    = 128;
-	float homePheromoneIntensity    = 128;
-	float pheromoneSpawnDelay       = 0.25f;
-	float deviationChance           = 0.001;
-	Color antDefaultColor           = {128, 128, 255, 128};
-	Color antWithFoodColor          = {128, 255, 128, 128};
-};
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntsSettings,
-                                   antMovementSpeed,
-                                   antRotationSpeed,
-                                   antRandomRotation,
-                                   antFovRange,
-                                   foodPheromoneStrengthLoss,
-                                   homePheromoneStrengthLoss,
-                                   foodPheromoneIntensity,
-                                   homePheromoneIntensity,
-                                   pheromoneSpawnDelay,
-                                   deviationChance,
-                                   antDefaultColor,
-                                   antWithFoodColor)
 
 enum class MapGenSettings
 {
@@ -59,35 +27,78 @@ NLOHMANN_JSON_SERIALIZE_ENUM(MapGenSettings, {
 	{ MapGenSettings::Amount, "amount" }
 })
 
-struct WorldSettings
+struct AntsSettings
 {
-	int   mapWidth         = 1280 / 2;
-	int   mapHeight        = 720 / 2;
-	float screenToMapRatio = 3.f;
+	float antMovementSpeed  = 40;
+	float antRotationSpeed  = 10;
+	float antRandomRotation = 0.3;
 
-	Color foodPheromoneColor = {0, 255, 0, 0};
-	Color homePheromoneColor = {0, 0, 255, 0};
+	int antFovRange = 8;
 
+	float pheromoneStrengthLoss   = 0.005;
+	float pheromoneSpawnIntensity = 128;
+	float pheromoneSpawnDelay     = 0.25f;
+
+	Color antDefaultColor  = {128, 128, 255, 128};
+	Color antWithFoodColor = {128, 255, 128, 128};
+};
+
+struct AntColonySettings
+{
+	size_t coloniesAmount = 1;
+
+	int foodToSpawnAnt = 10;
+
+	int antsStartAmount = 25;
+	int antsMaxAmount   = 2500;
+};
+
+struct GlobalSettings
+{
+	size_t windowWidth  = 1280;
+	size_t windowHeight = 720;
+
+	float screenToMapRatio        = 2.f;
+	float screenToMapInverseRatio = 1.f / screenToMapRatio;
+
+	size_t mapWidth  = static_cast<size_t>(static_cast<float>(windowWidth) / screenToMapRatio);
+	size_t mapHeight = static_cast<size_t>(static_cast<float>(windowHeight) / screenToMapRatio);
+};
+
+struct PheromoneMapSettings
+{
+	float homePheromoneEvaporationRate = 0.016f;
+	float foodPheromoneEvaporationRate = 0.016f;
+};
+
+struct TileMapSettings
+{
 	std::array<Color, static_cast<size_t>(TileType::Amount)> tileDefaultColors = {
-			{{0, 0, 0, 255}, {128, 128, 128, 255}, {0, 255, 0, 255}, {0, 0, 255, 255}}};
+			{
+					// Empty
+					{0, 0, 0, 255},
+
+					// Wall
+					{138, 129, 124, 255},
+
+					// Food
+					{132, 248, 44, 255},
+
+					// Nest
+					{30, 150, 252, 255}
+			}
+	};
 
 	int foodDefaultAmount = 30;
+};
 
-	float homePheromoneEvaporationRate = 0.008f;
-	float foodPheromoneEvaporationRate = 0.008f;
+struct MapGenerationSettings
+{
+	MapGenSettings mapGenSettings = MapGenSettings::FoodAndWalls;
 
-	int homeRadius = 5;
-
-	IntVec2 homePos         = {mapWidth / 2, mapHeight / 2};
-
-	int antsAmount = 1000;
-
-//	bool  shouldGenerateMap = true;
 	float mapGenNoiseScale    = 8.f;
 	int   mapGenNoiseBlur     = 2;
 	float mapGenNoiseContrast = 8;
-
-	MapGenSettings mapGenSettings = MapGenSettings::FoodAndWalls;
 
 	uint8_t mapGenFoodLowThreshold  = 0;
 	uint8_t mapGenFoodHighThreshold = 64;
@@ -95,28 +106,6 @@ struct WorldSettings
 	uint8_t mapGenWallLowThreshold  = 160;
 	uint8_t mapGenWallHighThreshold = 255;
 };
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldSettings,
-                                   mapWidth,
-                                   mapHeight,
-                                   screenToMapRatio,
-                                   foodPheromoneColor,
-                                   homePheromoneColor,
-                                   tileDefaultColors,
-                                   foodDefaultAmount,
-                                   homePheromoneEvaporationRate,
-                                   foodPheromoneEvaporationRate,
-                                   homeRadius,
-                                   homePos,
-                                   antsAmount,
-                                   mapGenNoiseScale,
-                                   mapGenNoiseBlur,
-                                   mapGenNoiseContrast,
-                                   mapGenSettings,
-                                   mapGenFoodLowThreshold,
-                                   mapGenFoodHighThreshold,
-                                   mapGenWallLowThreshold,
-                                   mapGenWallHighThreshold)
 
 class Settings
 {
@@ -161,8 +150,12 @@ public:
 	};
 
 private:
-	AntsSettings  m_antsTable;
-	WorldSettings m_worldTable;
+	AntsSettings          m_antsSettings;
+	AntColonySettings     m_antColonySettings;
+	GlobalSettings        m_globalSettings;
+	PheromoneMapSettings  m_pheromoneMapSettings;
+	TileMapSettings       m_tileMapSettings;
+	MapGenerationSettings m_mapGenerationSettings;
 };
 
 #endif //ANTS_SETTINGS_HPP

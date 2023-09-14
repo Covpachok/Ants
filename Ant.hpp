@@ -8,6 +8,7 @@
 #include "Timer.hpp"
 
 #include "World.hpp"
+#include "AntColony.hpp"
 
 class AntsSettings;
 
@@ -19,7 +20,7 @@ class Ant
 	};
 
 public:
-	void Init(float startX, float startY, const AntsSettings &valueTable);
+	Ant(AntColonyId colonyId, const Vector2& pos);
 
 	void Update(float delta, const World &world);
 	void PostUpdate(float delta, World &world);
@@ -49,18 +50,22 @@ private:
 		m_desiredRotation = m_rotation;
 	}
 
-	void CheckHomeCollision(const TileMap &tileMap, const IntVec2 &mapPos);
+	void CheckNestCollision(const TileMap &tileMap, const IntVec2 &mapPos);
 	void CheckFoodCollision(const TileMap &tileMap, const IntVec2 &mapPos);
 
 private:
-	Vector2 m_prevPos;
+	AntColonyId m_colonyId;
+
 	Vector2 m_pos;
+	Vector2 m_prevPos;
 
-	StateType m_state = SearchForFood;
+	StateType m_state;
 
-	const AntsSettings *m_antsSettings;
+	const AntsSettings &m_antsSettings;
 
 	const Color *m_colorsPtr[2];
+
+	float m_movementSpeed;
 
 	float m_rotation;
 	float m_desiredRotation;
@@ -71,6 +76,7 @@ private:
 	Timer m_pheromoneSpawnTimer;
 	Timer m_fovCheckTimer;
 	Timer m_deviationTimer;
+	Timer m_deviationResetTimer;
 
 	bool m_gotFood       = false;
 	bool m_takenFood     = false;

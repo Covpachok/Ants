@@ -1,0 +1,11 @@
+#ifndef ANTS_COLONIESMANAGER_HPP
+#define ANTS_COLONIESMANAGER_HPP
+
+
+class ColoniesManager
+{
+
+};
+
+
+#endif //ANTS_COLONIESMANAGER_HPP

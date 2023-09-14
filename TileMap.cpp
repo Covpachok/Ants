@@ -2,6 +2,13 @@
 
 #include "Settings.hpp"
 
+const IntVec2 k_deltaPos[4] = {
+		{1,  0},
+		{0,  1},
+		{-1, 0},
+		{0,  -1}
+};
+
 TileMap::TileMap(int width, int height) :
 		m_width(width), m_height(height), m_boundsChecker(0, m_width, 0, m_height)
 {
@@ -25,13 +32,25 @@ TileMap::TileMap(int width, int height) :
 
 void TileMap::SetTile(const IntVec2 &pos, TileType newType)
 {
-	if ( !m_boundsChecker.IsInBounds(pos))
+	if ( !m_boundsChecker.IsInBounds(pos) || newType == TileType::Nest )
 	{
 		return;
 	}
 
 	m_tiles[pos.y][pos.x]->ChangeType(newType);
-	UpdateColor(pos);
+
+	UpdateTileColor(pos);
+	for ( int i = 0; i < 4; ++i )
+	{
+		UpdateTileColor(pos + k_deltaPos[i]);
+	}
+
+	UpdateColorMap(pos);
+}
+
+void PlaceNest(const Nest &nest)
+{
+
 }
 
 void TileMap::TakeFood(const IntVec2 &pos)
@@ -54,7 +73,7 @@ void TileMap::Clear()
 		for ( int x = 0; x < m_width; ++x )
 		{
 			m_tiles[y][x]->ChangeType(TileType::Empty);
-			UpdateColor({x, y});
+			UpdateColorMap({x, y});
 		}
 	}
 }
@@ -64,8 +83,33 @@ void TileMap::Draw() const
 	m_colorMap->Draw();
 }
 
-void TileMap::UpdateColor(const IntVec2 &pos)
+void TileMap::UpdateColorMap(const IntVec2 &pos)
 {
 	m_colorMap->Set(pos, m_tiles[pos.y][pos.x]->GetColor());
 	m_colorMap->UpdatePixel(pos);
+}
+
+void TileMap::UpdateTileColor(const IntVec2 &pos)
+{
+	if ( !m_boundsChecker.IsInBounds(pos))
+	{
+		return;
+	}
+	std::array<TileType, 4> neighbors{TileType::Empty, TileType::Empty, TileType::Empty, TileType::Empty};
+
+	for ( int i = 0; i < 4; ++i )
+	{
+		auto nPos = pos + k_deltaPos[i];
+		if ( m_boundsChecker.IsInBounds(nPos))
+		{
+			neighbors[i] = m_tiles[nPos.y][nPos.x]->GetType();
+		}
+		else
+		{
+			neighbors[i] = m_errorTile.GetType();
+		}
+	}
+	m_tiles[pos.y][pos.x]->UpdateColorByNeighbors(neighbors);
+
+	UpdateColorMap(pos);
 }

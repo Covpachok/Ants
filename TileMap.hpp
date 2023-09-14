@@ -19,7 +19,7 @@ public:
 	TileMap(int width, int height);
 
 	void SetTile(const IntVec2 &pos, TileType newType);
-	void PlaceNest(const Nest &nest) {};
+	void PlaceNest(const Nest &nest);
 
 	void TakeFood(const IntVec2 &pos);
 
@@ -31,7 +31,8 @@ public:
 	void Draw() const;
 
 private:
-	void UpdateColor(const IntVec2 &pos);
+	void UpdateColorMap(const IntVec2 &pos);
+	void UpdateTileColor(const IntVec2 &pos);
 
 private:
 	int m_width, m_height;

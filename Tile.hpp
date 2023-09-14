@@ -3,6 +3,7 @@
 
 #include <raylib.h>
 #include <memory>
+#include <bitset>
 
 #include "IntVec.hpp"
 
@@ -14,10 +15,13 @@ public:
 		Empty, Wall, Food, Nest, Amount
 	};
 
+private:
+	inline static constexpr std::bitset<Tile::Amount> s_tilesPassability = 0b1001;
+
 public:
 	Tile(const IntVec2 &pos, TileType type);
 
-	void UpdateColor(const std::array<TileType, 4> &neighborTypes);
+	void UpdateColorByNeighbors(const std::array<TileType, 4> &neighborTypes);
 
 	void ChangeType(TileType type);
 
@@ -28,7 +32,7 @@ public:
 	inline Color GetColor() const { return m_color; };
 	inline Color GetDefaultColor() const { return m_defaultColor; };
 
-	inline bool IsPassable() const { return m_passable; }
+	inline bool IsPassable() const { return s_tilesPassability[m_type]; }
 
 private:
 	IntVec2  m_pos;
@@ -38,8 +42,6 @@ private:
 	Color m_defaultColor;
 
 	int m_amount;
-
-	bool m_passable;
 };
 
 using TileType = Tile::TileType;

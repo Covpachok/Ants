@@ -1,10 +1,6 @@
 #include "Tile.hpp"
 
-#include <bitset>
-
 #include "Settings.hpp"
-
-const std::bitset<Tile::Amount> k_tilesPassability = 0b1001;
 
 Tile::Tile(const IntVec2 &pos, TileType type) :
 		m_pos(pos)
@@ -12,7 +8,7 @@ Tile::Tile(const IntVec2 &pos, TileType type) :
 	ChangeType(type);
 }
 
-void Tile::UpdateColor(const std::array<TileType, 4> &neighborTypes)
+void Tile::UpdateColorByNeighbors(const std::array<TileType, 4> &neighborTypes)
 {
 	if ( m_type == TileType::Empty )
 	{
@@ -26,8 +22,13 @@ void Tile::UpdateColor(const std::array<TileType, 4> &neighborTypes)
 		sameTypeCount += ( neighborType == m_type );
 	}
 
-	float factor = std::min(0.3f * static_cast<float>(sameTypeCount), 1.f);
-	m_color = ColorBrightness(GetDefaultColor(), factor);
+	float factor = 0.25f + std::min(0.1875f * static_cast<float>(sameTypeCount), 0.75f);
+	m_color = {
+			static_cast<unsigned char>(m_defaultColor.r * factor),
+			static_cast<unsigned char>(m_defaultColor.g * factor),
+			static_cast<unsigned char>(m_defaultColor.b * factor),
+			m_defaultColor.a
+	};
 }
 
 void Tile::ChangeType(TileType type)
@@ -44,8 +45,6 @@ void Tile::ChangeType(TileType type)
 	{
 		m_amount = settings.foodDefaultAmount;
 	}
-
-	m_passable = k_tilesPassability[m_type];
 }
 
 bool Tile::Take()

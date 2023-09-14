@@ -7,52 +7,45 @@
 
 constexpr float k_antFovCheckDelay = 0.04f;
 
-bool CheckPointCircleCollision(Vector2 center1, Vector2 center2, float radius2)
+Ant::Ant(AntColonyId colonyId, const Vector2 &pos) :
+		m_colonyId(colonyId),
+		m_pos(pos), m_prevPos(m_pos),
+		m_state(SearchForFood),
+		m_antsSettings(Settings::Instance().GetAntsSettings())
 {
-	const float dx = center2.x - center1.x;
-	const float dy = center2.y - center1.y;
-
-	const float distanceSquared = dx * dx + dy * dy;
-
-	return distanceSquared <= radius2 * radius2;
-}
-
-void Ant::Init(float startX, float startY, const AntsSettings &valueTable)
-{
-	m_antsSettings = &valueTable;
-
-	m_pos             = {startX, startY};
-	m_prevPos         = m_pos;
 	m_rotation        = Random::Float(-M_PI, M_PI);
-//	m_rotation        = static_cast<float>(GetRandomValue(M_PI * -100, M_PI * 100)) / 100.f;
 	m_desiredRotation = m_rotation;
 
-	m_colorsPtr[0] = &m_antsSettings->antDefaultColor;
-	m_colorsPtr[1] = &m_antsSettings->antWithFoodColor;
+	m_colorsPtr[0] = &m_antsSettings.antDefaultColor;
+	m_colorsPtr[1] = &m_antsSettings.antWithFoodColor;
 
-	m_pheromoneSpawnTimer.SetDelay(m_antsSettings->pheromoneSpawnDelay);
+	m_pheromoneSpawnTimer.SetDelay(m_antsSettings.pheromoneSpawnDelay);
 	m_fovCheckTimer.SetDelay(k_antFovCheckDelay);
-	m_deviationTimer.SetDelay(1.f);
-
-	m_state = SearchForFood;
+	m_deviationTimer.SetDelay(Random::Float(10.f, 20.f));
+	m_deviationResetTimer.SetDelay(Random::Float(1.f, 2.f));
 }
 
-void Ant::Update(const float delta, const World &world)
+void Ant::Update(const float delta, const TileMap &tileMap, const PheromoneMap &pheromoneMap)
 {
 	m_pheromoneSpawnTimer.Update(delta);
 	m_fovCheckTimer.Update(delta);
 	m_deviationTimer.Update(delta);
+	m_deviationResetTimer.Update(delta);
 
-	if ( Random::Bool(m_antsSettings->deviationChance))
+	if ( m_deviationTimer.IsElapsed())
 	{
 		m_ignorePheromones = true;
 		m_deviationTimer.Reset();
 	}
 
-	if ( m_deviationTimer.IsElapsed())
+	if ( m_deviationResetTimer.IsElapsed())
 	{
 		m_ignorePheromones = false;
+		m_deviationResetTimer.Reset();
 	}
+
+	Rotate(delta);
+	Move(delta, world);
 
 	CheckCollisions(world);
 	if ( m_fovCheckTimer.IsElapsed())
@@ -61,14 +54,11 @@ void Ant::Update(const float delta, const World &world)
 		m_fovCheckTimer.Reset();
 	}
 
-	m_foodStrength = std::max(m_foodStrength - delta * m_antsSettings->foodPheromoneStrengthLoss, 0.f);
-	m_homeStrength = std::max(m_homeStrength - delta * m_antsSettings->homePheromoneStrengthLoss, 0.f);
-
-	Rotate(delta);
-	Move(delta, world);
+	m_foodStrength = std::max(m_foodStrength - delta * m_antsSettings.foodPheromoneStrengthLoss, 0.f);
+	m_homeStrength = std::max(m_homeStrength - delta * m_antsSettings.homePheromoneStrengthLoss, 0.f);
 }
 
-void Ant::PostUpdate(const float delta, World &world)
+void Ant::PostUpdate(const float delta, TileMap &tileMap, PheromoneMap &pheromoneMap)
 {
 	TileMap &tileMap = world.GetTileMap();
 
@@ -97,47 +87,44 @@ void Ant::PostUpdate(const float delta, World &world)
 	}
 }
 
-void Ant::Move(float delta, const World &world)
+void Ant::Move()
 {
 	m_prevPos = m_pos;
 
-	const float speed = m_antsSettings->antMovementSpeed * delta;
+	const float speed = m_antsSettings.antMovementSpeed;
 
 	m_pos.x += speed * std::cos(m_rotation);
 	m_pos.y += speed * std::sin(m_rotation);
 
-	StayInBounds(world);
+	StayInBounds();
 }
 
 void Ant::Rotate(float delta)
 {
-//	static std::random_device                    rd;
-//	static std::mt19937                          gen(rd());
-//	static std::uniform_real_distribution<float> def(-1.f, 1.f);
+	static std::mt19937                          gen{std::random_device()()};
+	static std::uniform_real_distribution<float> def(-1.f, 1.f);
 
-	const float randomRotation = Random::Float(-1.f, 1.f) * m_antsSettings->antRandomRotation;
+	const float randomRotation = def(gen) * m_antsSettings.antRandomRotation;
 
 	m_desiredRotation += randomRotation;
 
 	float rotationDiff = m_desiredRotation - m_rotation;
 	rotationDiff = std::remainder(rotationDiff, 2.0f * static_cast<float>(M_PI));
 
-	m_rotation += rotationDiff * m_antsSettings->antRotationSpeed * delta;
+	m_rotation += rotationDiff * m_antsSettings.antRotationSpeed * delta;
 }
 
-void Ant::SpawnPheromone(World &world)
+void Ant::SpawnPheromone(PheromoneMap &pheromoneMap)
 {
 	const IntVec2 pos = world.ScreenToWorld(m_pos.x, m_pos.y);
 
 	if ( m_gotFood )
 	{
-		auto &foodPheromoneMap = world.GetFoodPheromoneMap();
-		foodPheromoneMap.Add(pos.x, pos.y, m_antsSettings->foodPheromoneIntensity * m_foodStrength);
+		pheromoneMap.Add(PheromoneType::Food, pos.x, pos.y, m_antsSettings.foodPheromoneIntensity * m_foodStrength);
 	}
 	else
 	{
-		auto &homePheromoneMap = world.GetHomePheromoneMap();
-		homePheromoneMap.Add(pos.x, pos.y, m_antsSettings->homePheromoneIntensity * m_homeStrength);
+		pheromoneMap.Add(PheromoneType::Nest, pos.x, pos.y, m_antsSettings.homePheromoneIntensity * m_homeStrength);
 	}
 }
 
@@ -152,7 +139,7 @@ void Ant::CheckCollisions(const World &world)
 			CheckFoodCollision(tileMap, checkMapPos);
 			break;
 		case SearchForNest:
-			CheckHomeCollision(tileMap, checkMapPos);
+			CheckNestCollision(tileMap, checkMapPos);
 			break;
 		default:
 			break;
@@ -178,9 +165,8 @@ void Ant::CheckCollisions(const World &world)
 
 void Ant::CheckInFov(const World &world)
 {
-	auto &tileMap          = world.GetTileMap();
-	auto &foodPheromoneMap = world.GetFoodPheromoneMap();
-	auto &homePheromoneMap = world.GetHomePheromoneMap();
+	auto               &tileMap = world.GetTileMap();
+	const PheromoneMap *pheromoneMap;
 
 	// Caching rotations to improve performance
 	float     checkRotations[3][2];
@@ -209,14 +195,22 @@ void Ant::CheckInFov(const World &world)
 	bool foundObject    = false;
 	bool foundPheromone = false;
 
-	int prevSide = 0;
-	int turnSide = 0;
-
-	TileType tileType = TileType::Empty;
-
+	int   turnSide         = 0;
 	float screenToMapRatio = world.GetScreenToWorldRatio();
 
-	for ( int j = 1; j <= m_antsSettings->antFovRange && !foundObject; ++j )
+	switch ( m_state )
+	{
+		case SearchForFood:
+			pheromoneMap = &world.GetFoodPheromoneMap();
+			break;
+		case SearchForNest:
+			pheromoneMap = &world.GetHomePheromoneMap();
+			break;
+		default:
+			break;
+	}
+
+	for ( int j = 1; j <= m_antsSettings.antFovRange && !foundObject; ++j )
 	{
 		const float multiplier = screenToMapRatio * static_cast<float>(j);
 		for ( int   i          = -j / 2 - 1; i <= j / 2 + 1; ++i )
@@ -228,21 +222,20 @@ void Ant::CheckInFov(const World &world)
 			checkPos.x = m_pos.x + checkRotations[side + 1][0] * multiplier;
 			checkPos.y = m_pos.y + checkRotations[side + 1][1] * multiplier;
 
-			const IntVec2 checkMapPos = world.ScreenToWorld(checkPos.x, checkPos.y);
-
-			tileType = tileMap.GetTileType(checkMapPos);
+			const IntVec2 &checkMapPos = world.ScreenToWorld(checkPos.x, checkPos.y);
+			const Tile    &tile        = tileMap.GetTile(checkMapPos);
 
 			// Avoid walls if they are close
-			if ( tileType == TileType::Wall && j < 3 )
+			if ( !tile.IsPassable())
 			{
-				turnSide    = -side;
-				foundObject = true;
-				break;
-			}
-				// Go for the food
-			else if ( tileType == TileType::Food && !m_gotFood )
-			{
-				turnSide    = side;
+				if ( tile.GetType() == TileType::Food && !m_gotFood )
+				{
+					turnSide = side;
+				}
+				else if ( tile.GetType() == TileType::Wall && j < 3 )
+				{
+					turnSide = -side;
+				}
 				foundObject = true;
 				break;
 			}
@@ -252,16 +245,7 @@ void Ant::CheckInFov(const World &world)
 				continue;
 			}
 
-			// Look for home pheromones if ant have food
-			if ( m_gotFood )
-			{
-				checkedPheromone = homePheromoneMap.Get(checkMapPos);
-			}
-				// Look for food pheromones if ant doesn't have food
-			else
-			{
-				checkedPheromone = foodPheromoneMap.Get(checkMapPos);
-			}
+			checkedPheromone = pheromoneMap->Get(checkMapPos);
 
 			if ( checkedPheromone > strongestPheromone )
 			{
@@ -269,13 +253,6 @@ void Ant::CheckInFov(const World &world)
 				turnSide           = side;
 				foundPheromone     = true;
 			}
-				// Fixes ants going left when they have spotted two strong pheromones
-			else if ( checkedPheromone == strongestPheromone )
-			{
-				turnSide = ( side == 0 || prevSide == 0 ) ? 0 : side;
-			}
-
-			prevSide = side;
 		}
 	}
 
@@ -294,7 +271,8 @@ void Ant::ChangeDesiredRotation(Vector2 desiredPos)
 
 void Ant::Draw()
 {
-	DrawCircleSector(m_pos, 2, 0, 360, 1, *m_colorsPtr[m_gotFood]);
+	DrawRectangle(m_pos.x, m_pos.y, 2, 2, *m_colorsPtr[m_gotFood]);
+//	DrawCircleSector(m_pos, 2, 0, 360, 1, *m_colorsPtr[m_gotFood]);
 }
 
 void Ant::StayInBounds(const World &world)
@@ -347,7 +325,7 @@ void Ant::RandomizeDesiredRotation(float pi)
 	m_desiredRotation += ( pi * Random::Float(-1.f, 1.f));
 }
 
-void Ant::CheckHomeCollision(const TileMap &tileMap, const IntVec2 &mapPos)
+void Ant::CheckNestCollision(const TileMap &tileMap, const IntVec2 &mapPos)
 {
 	TileType tileType = tileMap.GetTileType(mapPos);
 
