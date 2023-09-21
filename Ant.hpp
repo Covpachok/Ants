@@ -4,11 +4,13 @@
 #include <cmath>
 #include <raylib.h>
 
+#include "PheromoneMap.hpp"
+#include "TileMap.hpp"
+
 #include "IntVec.hpp"
 #include "Timer.hpp"
 
-#include "World.hpp"
-#include "AntColony.hpp"
+#include "Aliases.hpp"
 
 class AntsSettings;
 
@@ -20,10 +22,15 @@ class Ant
 	};
 
 public:
-	Ant(AntColonyId colonyId, const Vector2& pos);
+	Ant(AntId id, AntColonyId colonyId, const Vector2 &pos);
 
-	void Update(float delta, const World &world);
-	void PostUpdate(float delta, World &world);
+	void Update(const TileMap &tileMap, const PheromoneMap &pheromoneMap);
+	void PostUpdate(TileMap &tileMap, PheromoneMap &pheromoneMap);
+
+	void SetId(AntId newId) { m_id = newId; }
+
+	AntId GetId() const { return m_id; }
+	AntColonyId GetColonyId() const { return m_colonyId; }
 
 	Vector2 GetPos() const { return m_pos; }
 	bool IsGotFood() const { return m_gotFood; }
@@ -31,14 +38,14 @@ public:
 	void Draw();
 
 private:
-	void Rotate(float delta);
-	void Move(float delta, const World &world);
-	void StayInBounds(const World &world);
+	void Rotate();
+	void Move();
+	void StayInBounds();
 
-	void SpawnPheromone(World &world);
+	void SpawnPheromone(PheromoneMap &pheromoneMap);
 
-	void CheckInFov(const World &world);
-	void CheckCollisions(const World &world);
+	void CheckInFov(const TileMap &tileMap, const PheromoneMap &pheromoneMap);
+	void CheckCollisions(const TileMap &tileMap);
 
 	void RandomizeRotation(float pi = M_PI);
 	void RandomizeDesiredRotation(float pi = M_PI);
@@ -54,6 +61,7 @@ private:
 	void CheckFoodCollision(const TileMap &tileMap, const IntVec2 &mapPos);
 
 private:
+	AntId       m_id;
 	AntColonyId m_colonyId;
 
 	Vector2 m_pos;
@@ -70,18 +78,17 @@ private:
 	float m_rotation;
 	float m_desiredRotation;
 
-	float m_homeStrength = 1;
-	float m_foodStrength = 0;
+	float m_pheromoneStrength = 1;
 
 	Timer m_pheromoneSpawnTimer;
 	Timer m_fovCheckTimer;
 	Timer m_deviationTimer;
 	Timer m_deviationResetTimer;
 
-	bool m_gotFood       = false;
-	bool m_takenFood     = false;
-	bool m_deliveredFood = false;
-	bool m_ignorePheromones   = false;
+	bool m_gotFood          = false;
+	bool m_takenFood        = false;
+	bool m_deliveredFood    = false;
+	bool m_ignorePheromones = false;
 
 	IntVec2 m_takenFoodPos;
 };

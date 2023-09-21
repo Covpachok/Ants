@@ -10,7 +10,7 @@ Tile::Tile(const IntVec2 &pos, TileType type) :
 
 void Tile::UpdateColorByNeighbors(const std::array<TileType, 4> &neighborTypes)
 {
-	if ( m_type == TileType::Empty )
+	if ( m_type == TileType::eEmpty )
 	{
 		return;
 	}
@@ -31,29 +31,23 @@ void Tile::UpdateColorByNeighbors(const std::array<TileType, 4> &neighborTypes)
 	};
 }
 
-void Tile::ChangeType(TileType type)
+void Tile::ChangeType(TileType type, Nest *nest)
 {
 	m_type = type;
 
-	const auto &settings = Settings::Instance().GetWorldSettings();
+	const auto &settings = Settings::Instance().GetTileMapSettings();
 
 	m_color        = settings.tileDefaultColors[static_cast<int>(m_type)];
 	m_defaultColor = m_color;
 
 	m_amount = 0;
-	if ( m_type == TileType::Food )
+	m_nest   = nullptr;
+	if ( m_type == TileType::eFood )
 	{
 		m_amount = settings.foodDefaultAmount;
 	}
-}
-
-bool Tile::Take()
-{
-	--m_amount;
-
-	if ( m_amount <= 0 )
+	else if ( m_type == TileType::eNest )
 	{
-		return true;
+		m_nest = nest;
 	}
-	return false;
 }

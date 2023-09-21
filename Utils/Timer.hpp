@@ -14,6 +14,8 @@ public:
 		mTime += delta;
 	};
 
+	void Elapse() { mTime = mDelay; }
+
 	bool IsElapsed() const { return mTime >= mDelay; }
 
 	void Reset() { mTime = 0; }

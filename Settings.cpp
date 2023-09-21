@@ -11,8 +11,12 @@ void Settings::Save(const std::string &filename)
 	std::ofstream f(filename + ".json");
 	json          j;
 
-	j["WorldTable"] = m_worldTable;
-	j["AntsTable"]  = m_antsTable;
+	j["Ants"]          = m_antsSettings;
+	j["AntColony"]     = m_antColonySettings;
+	j["Global"]        = m_globalSettings;
+	j["PheromoneMap"]  = m_pheromoneMapSettings;
+	j["TileMap"]       = m_tileMapSettings;
+	j["MapGeneration"] = m_mapGenerationSettings;
 
 	f << std::setw(4) << j << std::endl;
 }
@@ -33,8 +37,14 @@ void Settings::Load(const std::string &filename)
 
 	std::cout << std::setw(4) << data << std::endl;
 
-	m_worldTable = data["WorldTable"];
-	m_antsTable = data["AntsTable"];
+	m_antsSettings          = data["Ants"];
+	m_antColonySettings     = data["AntColony"];
+	m_globalSettings        = data["Global"];
+	m_pheromoneMapSettings  = data["PheromoneMap"];
+	m_tileMapSettings       = data["TileMap"];
+	m_mapGenerationSettings = data["MapGeneration"];
+
+	m_globalSettings.Recalculate();
 }
 
 std::vector<std::string> Settings::FindSavedSettings()

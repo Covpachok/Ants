@@ -1,6 +1,9 @@
 #include "TileMap.hpp"
 
 #include "Settings.hpp"
+#include "Brush.hpp"
+
+#include "Nest.hpp"
 
 const IntVec2 k_deltaPos[4] = {
 		{1,  0},
@@ -20,7 +23,7 @@ TileMap::TileMap(int width, int height) :
 		m_tiles[y].resize(m_width);
 		for ( int x = 0; x < m_width; ++x )
 		{
-			m_tiles[y][x] = std::make_unique<Tile>(IntVec2{x, y}, TileType::Empty);
+			m_tiles[y][x] = std::make_unique<Tile>(IntVec2{x, y}, TileType::eEmpty);
 			m_colorMap->Set(x, y, m_tiles[y][x]->GetColor());
 		}
 		m_tiles[y].shrink_to_fit();
@@ -32,12 +35,12 @@ TileMap::TileMap(int width, int height) :
 
 void TileMap::SetTile(const IntVec2 &pos, TileType newType)
 {
-	if ( !m_boundsChecker.IsInBounds(pos) || newType == TileType::Nest )
+	if ( !m_boundsChecker.IsInBounds(pos))
 	{
 		return;
 	}
 
-	m_tiles[pos.y][pos.x]->ChangeType(newType);
+	m_tiles[pos.y][pos.x]->ChangeType(newType, m_nest);
 
 	UpdateTileColor(pos);
 	for ( int i = 0; i < 4; ++i )
@@ -48,22 +51,19 @@ void TileMap::SetTile(const IntVec2 &pos, TileType newType)
 	UpdateColorMap(pos);
 }
 
-void PlaceNest(const Nest &nest)
-{
-
-}
-
-void TileMap::TakeFood(const IntVec2 &pos)
+bool TileMap::TakeFood(const IntVec2 &pos)
 {
 	if ( !m_boundsChecker.IsInBounds(pos))
 	{
-		return;
+		return false;
 	}
 
-	if ( m_tiles[pos.y][pos.x]->Take())
+	bool depleted = m_tiles[pos.y][pos.x]->Take();
+	if ( depleted )
 	{
-		SetTile(pos, TileType::Empty);
+		SetTile(pos, TileType::eEmpty);
 	}
+	return depleted;
 }
 
 void TileMap::Clear()
@@ -72,7 +72,7 @@ void TileMap::Clear()
 	{
 		for ( int x = 0; x < m_width; ++x )
 		{
-			m_tiles[y][x]->ChangeType(TileType::Empty);
+			m_tiles[y][x]->ChangeType(TileType::eEmpty);
 			UpdateColorMap({x, y});
 		}
 	}
@@ -95,7 +95,7 @@ void TileMap::UpdateTileColor(const IntVec2 &pos)
 	{
 		return;
 	}
-	std::array<TileType, 4> neighbors{TileType::Empty, TileType::Empty, TileType::Empty, TileType::Empty};
+	std::array<TileType, 4> neighbors{TileType::eEmpty, TileType::eEmpty, TileType::eEmpty, TileType::eEmpty};
 
 	for ( int i = 0; i < 4; ++i )
 	{
@@ -112,4 +112,19 @@ void TileMap::UpdateTileColor(const IntVec2 &pos)
 	m_tiles[pos.y][pos.x]->UpdateColorByNeighbors(neighbors);
 
 	UpdateColorMap(pos);
+}
+
+void TileMap::PlaceNest(Nest &nest)
+{
+	m_nest = &nest;
+
+	auto  pos = nest.GetPos();
+	Brush brush{TileType::eEmpty, BrushType::Round, nest.GetSize() * 2};
+	brush.Paint(*this, pos.x, pos.y);
+
+	brush.SetPaintType(TileType::eNest);
+	brush.SetBrushSize(nest.GetSize());
+	brush.Paint(*this, pos.x, pos.y);
+
+	m_nest = nullptr;
 }

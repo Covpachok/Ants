@@ -16,42 +16,63 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Color, r, g, b, a)
 
 enum class MapGenSettings
 {
-	None, FoodOnly, WallsOnly, FoodAndWalls, Amount
+	eNone, eFoodOnly, eWallsOnly, eFoodAndWalls, eAmount
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(MapGenSettings, {
-	{ MapGenSettings::None, "none" },
-	{ MapGenSettings::FoodOnly, "foodOnly" },
-	{ MapGenSettings::WallsOnly, "wallsOnly" },
-	{ MapGenSettings::FoodAndWalls, "foodAndWalls" },
-	{ MapGenSettings::Amount, "amount" }
+	{ MapGenSettings::eNone, "none" },
+	{ MapGenSettings::eFoodOnly, "foodOnly" },
+	{ MapGenSettings::eWallsOnly, "wallsOnly" },
+	{ MapGenSettings::eFoodAndWalls, "foodAndWalls" },
+	{ MapGenSettings::eAmount, "amount" }
 })
 
 struct AntsSettings
 {
-	float antMovementSpeed  = 40;
-	float antRotationSpeed  = 10;
-	float antRandomRotation = 0.3;
-
-	int antFovRange = 8;
-
-	float pheromoneStrengthLoss   = 0.005;
+	float antMovementSpeed        = 30 * 0.016;
+	float antRotationSpeed        = 10 * 0.016;
+	float antRandomRotation       = 0.3;
+	int   antFovRange             = 8;
+	float pheromoneStrengthLoss   = 0.001;
 	float pheromoneSpawnIntensity = 128;
-	float pheromoneSpawnDelay     = 0.25f;
-
-	Color antDefaultColor  = {128, 128, 255, 128};
-	Color antWithFoodColor = {128, 255, 128, 128};
+	float pheromoneSpawnDelay     = 15;
+	float fovCheckDelay           = 3;
+	Color antDefaultColor         = {128, 128, 255, 128};
+	Color antWithFoodColor        = {128, 255, 128, 128};
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntsSettings,
+                                   antMovementSpeed,
+                                   antRotationSpeed,
+                                   antRandomRotation,
+                                   antFovRange,
+                                   pheromoneStrengthLoss,
+                                   pheromoneSpawnIntensity,
+                                   pheromoneSpawnDelay,
+                                   fovCheckDelay,
+                                   antDefaultColor,
+                                   antWithFoodColor)
 
 struct AntColonySettings
 {
 	size_t coloniesAmount = 1;
+	int    foodToSpawnAnt = 10;
 
-	int foodToSpawnAnt = 10;
-
-	int antsStartAmount = 25;
+	int antsStartAmount = 1000;
 	int antsMaxAmount   = 2500;
+
+	float antDeathDelay = 10;
+
+	int nestSize = 5;
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntColonySettings,
+                                   coloniesAmount,
+                                   foodToSpawnAnt,
+                                   antsStartAmount,
+                                   antsMaxAmount,
+                                   antDeathDelay,
+                                   nestSize)
 
 struct GlobalSettings
 {
@@ -63,17 +84,40 @@ struct GlobalSettings
 
 	size_t mapWidth  = static_cast<size_t>(static_cast<float>(windowWidth) / screenToMapRatio);
 	size_t mapHeight = static_cast<size_t>(static_cast<float>(windowHeight) / screenToMapRatio);
+
+	IntVec2 ScreenToWorld(const Vector2 &pos) const
+	{
+		return {pos.x * screenToMapInverseRatio, pos.y * screenToMapInverseRatio};
+	}
+	Vector2 WorldToScreen(const IntVec2 &pos) const
+	{
+		return {static_cast<float>(pos.x) * screenToMapRatio, static_cast<float>(pos.y) * screenToMapRatio};
+	}
+
+	void Recalculate()
+	{
+		screenToMapInverseRatio = 1.f / screenToMapRatio;
+		mapWidth                = static_cast<size_t>(static_cast<float>(windowWidth) / screenToMapRatio);
+		mapHeight               = static_cast<size_t>(static_cast<float>(windowHeight) / screenToMapRatio);
+	};
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GlobalSettings,
+                                   windowWidth,
+                                   windowHeight,
+                                   screenToMapRatio)
 
 struct PheromoneMapSettings
 {
-	float homePheromoneEvaporationRate = 0.016f;
-	float foodPheromoneEvaporationRate = 0.016f;
+	float pheromoneEvaporationRate = 0.016f;
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PheromoneMapSettings,
+                                   pheromoneEvaporationRate)
 
 struct TileMapSettings
 {
-	std::array<Color, static_cast<size_t>(TileType::Amount)> tileDefaultColors = {
+	std::array<Color, static_cast<size_t>(TileType::eAmount)> tileDefaultColors = {
 			{
 					// Empty
 					{0, 0, 0, 255},
@@ -92,20 +136,31 @@ struct TileMapSettings
 	int foodDefaultAmount = 30;
 };
 
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TileMapSettings,
+                                   tileDefaultColors,
+                                   foodDefaultAmount)
+
 struct MapGenerationSettings
 {
-	MapGenSettings mapGenSettings = MapGenSettings::FoodAndWalls;
-
-	float mapGenNoiseScale    = 8.f;
-	int   mapGenNoiseBlur     = 2;
-	float mapGenNoiseContrast = 8;
-
-	uint8_t mapGenFoodLowThreshold  = 0;
-	uint8_t mapGenFoodHighThreshold = 64;
-
-	uint8_t mapGenWallLowThreshold  = 160;
-	uint8_t mapGenWallHighThreshold = 255;
+	MapGenSettings mapGenSettings          = MapGenSettings::eFoodAndWalls;
+	float          mapGenNoiseScale        = 8.f;
+	int            mapGenNoiseBlur         = 2;
+	float          mapGenNoiseContrast     = 8;
+	uint8_t        mapGenFoodLowThreshold  = 0;
+	uint8_t        mapGenFoodHighThreshold = 64;
+	uint8_t        mapGenWallLowThreshold  = 160;
+	uint8_t        mapGenWallHighThreshold = 255;
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MapGenerationSettings,
+                                   mapGenSettings,
+                                   mapGenNoiseScale,
+                                   mapGenNoiseBlur,
+                                   mapGenNoiseContrast,
+                                   mapGenFoodLowThreshold,
+                                   mapGenFoodHighThreshold,
+                                   mapGenWallLowThreshold,
+                                   mapGenWallHighThreshold)
 
 class Settings
 {
@@ -120,23 +175,21 @@ public:
 
 	static const Settings &Instance() { return *m_instance; }
 
-	const AntsSettings &GetAntsSettings() const
-	{
-		return m_antsTable;
-	};
-	const WorldSettings &GetWorldSettings() const
-	{
-		return m_worldTable;
-	};
+	// clang-format off
+	const AntsSettings          &GetAntsSettings()          const { return m_antsSettings; };
+	const AntColonySettings     &GetAntColonySettings()     const { return m_antColonySettings; };
+	const GlobalSettings        &GetGlobalSettings()        const { return m_globalSettings; };
+	const PheromoneMapSettings  &GetPheromoneMapSettings()  const { return m_pheromoneMapSettings; };
+	const TileMapSettings       &GetTileMapSettings()       const { return m_tileMapSettings; };
+	const MapGenerationSettings &GetMapGenerationSettings() const { return m_mapGenerationSettings; };
 
-	AntsSettings &GetMutableAntsSettings()
-	{
-		return m_antsTable;
-	}
-	WorldSettings &GetMutableWorldSettings()
-	{
-		return m_worldTable;
-	}
+	AntsSettings            &GetAntsSettings()            { return m_antsSettings; };
+	AntColonySettings       &GetAntColonySettings()       { return m_antColonySettings; };
+	GlobalSettings          &GetGlobalSettings()          { return m_globalSettings; };
+	PheromoneMapSettings    &GetPheromoneMapSettings()    { return m_pheromoneMapSettings; };
+	TileMapSettings         &GetTileMapSettings()         { return m_tileMapSettings; };
+	MapGenerationSettings   &GetMapGenerationSettings()   { return m_mapGenerationSettings; };
+	// clang-format on
 
 	void Save(const std::string &filename);
 	void Load(const std::string &filename);
@@ -145,8 +198,12 @@ public:
 
 	void Reset()
 	{
-		m_antsTable  = AntsSettings();
-		m_worldTable = WorldSettings();
+		m_antsSettings          = AntsSettings();
+		m_antColonySettings     = AntColonySettings();
+		m_globalSettings        = GlobalSettings();
+		m_pheromoneMapSettings  = PheromoneMapSettings();
+		m_tileMapSettings       = TileMapSettings();
+		m_mapGenerationSettings = MapGenerationSettings();
 	};
 
 private:

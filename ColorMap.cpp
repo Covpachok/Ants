@@ -7,7 +7,7 @@ ColorMap::ColorMap(size_t width, size_t height, const Color &defaultColor)
 		m_width(static_cast<int>(width)), m_height(static_cast<int>(height)),
 		m_size(m_width * m_height), m_defaultColor(defaultColor)
 {
-	m_screenToMapRatio = Settings::Instance().GetWorldSettings().screenToMapRatio;
+	m_screenToMapRatio = Settings::Instance().GetGlobalSettings().screenToMapRatio;
 
 	m_drawSrc  = {0, 0,
 	              static_cast<float>(m_width),

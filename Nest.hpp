@@ -5,21 +5,25 @@
 #include "IntVec.hpp"
 
 #include "TileMap.hpp"
-#include "AntColony.hpp"
 
-using NestId = uint32_t;
+#include "Aliases.hpp"
+
+class AntColony;
 
 class Nest
 {
 public:
-	Nest(NestId id, TileMap &tileMap, const IntVec2 &pos);
+	Nest(NestId id, AntColony *colony, const IntVec2 &pos, TileMap &tileMap);
 
 	inline void AddFoodToStorage();
 	void Relocate(const IntVec2 &newPos, TileMap &tileMap);
 
-	NestId GetId() const { return m_id; }
-	AntColonyId GetColonyId() const { return m_colonyId; }
+	void SetColony(AntColony *colony) { m_colony = colony; }
 
+	NestId GetId() const { return m_id; }
+	AntColony *GetColony() const { return m_colony; }
+
+	int GetSize() const { return m_size; };
 	const IntVec2 &GetPos() const { return m_pos; };
 	const Vector2 &GetScreenPos() const { return m_screenPos; };
 
@@ -27,8 +31,8 @@ private:
 	void OnFoodStoredIncrease();
 
 private:
-	AntColonyId m_colonyId;
-	NestId      m_id;
+	AntColony *m_colony;
+	NestId    m_id;
 
 	IntVec2 m_pos;
 	Vector2 m_screenPos;

@@ -8,7 +8,6 @@
 #include "IntVec.hpp"
 
 #include "Tile.hpp"
-
 #include "ColorMap.hpp"
 
 class Nest;
@@ -19,9 +18,9 @@ public:
 	TileMap(int width, int height);
 
 	void SetTile(const IntVec2 &pos, TileType newType);
-	void PlaceNest(const Nest &nest);
+	void PlaceNest(Nest &nest);
 
-	void TakeFood(const IntVec2 &pos);
+	bool TakeFood(const IntVec2 &pos);
 
 	void Clear();
 
@@ -42,7 +41,10 @@ private:
 
 	BoundsChecker2D m_boundsChecker;
 
-	Tile m_errorTile{{-1, -1}, TileType::Wall};
+	Tile m_errorTile{{-1, -1}, TileType::eWall};
+
+	bool m_placingNest = false;
+	Nest *m_nest       = nullptr;
 };
 
 const Tile &TileMap::GetTile(const IntVec2 &pos) const

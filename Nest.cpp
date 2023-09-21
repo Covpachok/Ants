@@ -2,40 +2,34 @@
 
 #include "Settings.hpp"
 #include "Brush.hpp"
+#include "AntColony.hpp"
 
-Nest::Nest(NestId id, TileMap &tileMap, const IntVec2 &pos) :
-		m_id(id)
+Nest::Nest(NestId id, AntColony *colony, const IntVec2 &pos, TileMap &tileMap) :
+		m_colony(colony), m_id(id)
 {
-	auto &worldSettings = Settings::Instance().GetWorldSettings();
+	auto &globalSettings    = Settings::Instance().GetGlobalSettings();
+	auto &antColonySettings = Settings::Instance().GetAntColonySettings();
 
-	m_pos        = worldSettings.homePos;
-	m_screenPos  = {
-			static_cast<float>(m_pos.x) * worldSettings.screenToMapRatio,
-			static_cast<float>(m_pos.y) * worldSettings.screenToMapRatio
-	};
+	m_pos       = pos;
+	m_screenPos = globalSettings.WorldToScreen(m_pos);
 
-	m_size       = worldSettings.homeRadius;
+	m_size       = antColonySettings.nestSize;
 	m_foodStored = 0;
 
-	Relocate(m_pos, tileMap);
+	tileMap.PlaceNest(*this);
 }
 
 void Nest::Relocate(const IntVec2 &newPos, TileMap &tileMap)
 {
-	Brush brush{TileType::Empty, BrushType::Round, m_size};
-	brush.Paint(tileMap, m_pos.x, m_pos.y);
-
-	m_pos = newPos;
-	brush.SetPaintType(TileType::Nest);
-	brush.Paint(tileMap, m_pos.x, m_pos.y);
+	tileMap.PlaceNest(*this);
 }
 
 void Nest::OnFoodStoredIncrease()
 {
-	const int foodToSpawnAnt = Settings::Instance().GetAntsSettings().foodToSpawnAnt;
-	if ( m_foodStored >= foodToSpawnAnt )
+	const int foodToSpawnAnt = Settings::Instance().GetAntColonySettings().foodToSpawnAnt;
+	if ( m_foodStored >= foodToSpawnAnt && m_colony )
 	{
 		m_foodStored -= foodToSpawnAnt;
+		m_colony->SpawnAnt(m_screenPos);
 	}
-
 }

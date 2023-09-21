@@ -28,10 +28,22 @@ public:
 	void Clear();
 
 	void Add(Type pheromoneType, int x, int y, float intensity);
-	inline void Add(Type pheromoneType, const IntVec2 &pos, float intensity) { Add(pheromoneType, pos.x, pos.y, intensity); }
+	inline void Add(Type pheromoneType, const IntVec2 &pos, float intensity)
+	{
+		Add(pheromoneType, pos.x, pos.y, intensity);
+	}
+
+	void Substract(Type pheromoneType, int x, int y, float intensity);
+	inline void Substract(Type pheromoneType, const IntVec2 &pos, float intensity)
+	{
+		Substract(pheromoneType, pos.x, pos.y, intensity);
+	}
 
 	void Set(Type pheromoneType, int x, int y, float intensity);
-	inline void Set(Type pheromoneType, const IntVec2 &pos, float intensity) { Set(pheromoneType, pos.x, pos.y, intensity); }
+	inline void Set(Type pheromoneType, const IntVec2 &pos, float intensity)
+	{
+		Set(pheromoneType, pos.x, pos.y, intensity);
+	}
 
 	inline float Get(Type pheromoneType, int x, int y) const;
 	inline float Get(Type pheromoneType, const IntVec2 &pos) const { return Get(pheromoneType, pos.x, pos.y); };
@@ -49,9 +61,6 @@ private:
 	float m_evaporationRate;
 
 	std::array<std::vector<std::vector<float>>, Type::Amount> m_pheromones;
-//	std::vector<std::vector<float>> m_foodPheromones; // lead to food
-//	std::vector<std::vector<float>> m_nestPheromones; // lead to nest
-//	std::vector<std::vector<float>> m_lostPheromones; // informs that food disappeared
 
 	ColorMap m_colorMap;
 

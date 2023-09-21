@@ -1,6 +1,5 @@
 #include "Brush.hpp"
 
-#include "World.hpp"
 #include "TileMap.hpp"
 
 void PaintPoint(TileMap &tileMap, Brush &brush, int x, int y)

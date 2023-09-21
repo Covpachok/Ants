@@ -18,7 +18,7 @@ public:
 	};
 
 public:
-	explicit Brush(TileType paintType = TileType::Food, BrushType brushType = Round, int brushSize = 5) :
+	explicit Brush(TileType paintType = TileType::eFood, BrushType brushType = Round, int brushSize = 5) :
 			m_paintType(paintType), m_brushType(brushType), m_brushSize(brushSize) {}
 
 	void Paint(TileMap &tileMap, int x, int y);
@@ -30,8 +30,6 @@ public:
 	TileType GetPaintType() const { return m_paintType; }
 	BrushType GetBrushType() const { return m_brushType; }
 	int GetBrushSize() const { return m_brushSize; }
-
-private:
 
 private:
 	TileType  m_paintType;

@@ -72,6 +72,16 @@ void PheromoneMap::Add(Type pheromoneType, int x, int y, float intensity)
 	m_pheromones[pheromoneType][y][x] = std::max(m_pheromones[pheromoneType][y][x], intensity);
 }
 
+void PheromoneMap::Substract(PheromoneMap::Type pheromoneType, int x, int y, float intensity)
+{
+	if ( !m_boundsChecker.IsInBounds(x, y))
+	{
+		return;
+	}
+
+	m_pheromones[pheromoneType][y][x] = std::max(m_pheromones[pheromoneType][y][x], 0);
+}
+
 void PheromoneMap::Set(Type pheromoneType, int x, int y, float intensity)
 {
 	if ( !m_boundsChecker.IsInBounds(x, y))
@@ -114,4 +124,5 @@ void PheromoneMap::UpdateColor(int x, int y)
 	sum += color.b;
 
 	color.a = static_cast<unsigned char>(std::min(sum, 255));
+//	color.a = sum >= (255 * 3) ? 0 : 255;
 }
