@@ -313,7 +313,7 @@ void Ant::ChangeDesiredRotation(Vector2 desiredPos)
 void Ant::Draw()
 {
 //	DrawRectangle(m_pos.x, m_pos.y, 1, 1, *m_colorsPtr[m_gotFood]);
-	DrawRectanglePro(Rectangle{m_pos.x, m_pos.y, 2, 0.75f}, {0, 0}, m_rotation * ( 180.0 / M_PI ),
+	DrawRectanglePro(Rectangle{m_pos.x, m_pos.y, 2.5f, 1.25f}, {0, 0}, m_rotation * ( 180.0 / M_PI ),
 	                 *m_colorsPtr[m_gotFood]);
 //	DrawCircleSector(m_pos, 2, 0, 360, 1, *m_colorsPtr[m_gotFood]);
 }
