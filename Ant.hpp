@@ -84,11 +84,14 @@ private:
 	Timer m_fovCheckTimer;
 	Timer m_deviationTimer;
 	Timer m_deviationResetTimer;
+	Timer m_lostPheromoneTimer;
 
 	bool m_gotFood          = false;
 	bool m_takenFood        = false;
 	bool m_deliveredFood    = false;
 	bool m_ignorePheromones = false;
+	bool m_decreasePheromones = false;
+	bool m_spawnLostPheromone = false;
 
 	IntVec2 m_takenFoodPos;
 };

@@ -28,7 +28,8 @@ Ant::Ant(AntId id, AntColonyId colonyId, const Vector2 &pos) :
 	m_pheromoneSpawnTimer.SetDelay(m_antsSettings.pheromoneSpawnDelay);
 	m_fovCheckTimer.SetDelay(m_antsSettings.fovCheckDelay);
 	m_deviationTimer.SetDelay(Random::Int(1000, 2000));
-	m_deviationResetTimer.SetDelay(100);
+	m_deviationResetTimer.SetDelay(50);
+	m_lostPheromoneTimer.SetDelay(1000);
 }
 
 void Ant::Update(const TileMap &tileMap, const PheromoneMap &pheromoneMap)
@@ -48,7 +49,8 @@ void Ant::Update(const TileMap &tileMap, const PheromoneMap &pheromoneMap)
 
 	if ( m_deviationResetTimer.IsElapsed())
 	{
-		m_ignorePheromones = false;
+		m_ignorePheromones   = false;
+		m_decreasePheromones = false;
 		m_deviationResetTimer.Reset();
 	}
 
@@ -70,12 +72,14 @@ void Ant::PostUpdate(TileMap &tileMap, PheromoneMap &pheromoneMap)
 	if ( m_takenFood && tileMap.GetTileType(m_takenFoodPos) == TileType::eFood )
 	{
 		m_pheromoneStrength = 1;
-		m_gotFood   = true;
-		m_state     = SearchForNest;
-		m_takenFood = false;
+		m_gotFood           = true;
+		m_state             = SearchForNest;
+		m_takenFood         = false;
 		if ( tileMap.TakeFood(m_takenFoodPos))
 		{
 			pheromoneMap.Set(PheromoneType::Lost, m_takenFoodPos, m_antsSettings.pheromoneSpawnIntensity);
+			m_lostPheromoneTimer.Reset();
+			m_spawnLostPheromone = true;
 		}
 	}
 
@@ -90,6 +94,15 @@ void Ant::PostUpdate(TileMap &tileMap, PheromoneMap &pheromoneMap)
 		SpawnPheromone(pheromoneMap);
 		m_pheromoneSpawnTimer.Reset();
 	}
+
+	if ( m_decreasePheromones )
+	{
+		auto          settings = Settings::Instance();
+		const IntVec2 pos      = settings.GetGlobalSettings().ScreenToWorld(m_prevPos);
+		pheromoneMap.Substract(PheromoneType::Food, pos.x, pos.y,
+		                       settings.GetPheromoneMapSettings().pheromoneEvaporationRate);
+	}
+
 }
 
 void Ant::Move()
@@ -123,7 +136,12 @@ void Ant::SpawnPheromone(PheromoneMap &pheromoneMap)
 {
 	const IntVec2 pos = Settings::Instance().GetGlobalSettings().ScreenToWorld(m_prevPos);
 
-	if ( m_gotFood )
+	if ( m_spawnLostPheromone )
+	{
+		pheromoneMap.Add(PheromoneType::Lost, pos.x, pos.y,
+		                 m_antsSettings.pheromoneSpawnIntensity * m_pheromoneStrength);
+	}
+	else if ( m_gotFood )
 	{
 		pheromoneMap.Add(PheromoneType::Food, pos.x, pos.y,
 		                 m_antsSettings.pheromoneSpawnIntensity * m_pheromoneStrength);
@@ -255,12 +273,14 @@ void Ant::CheckInFov(const TileMap &tileMap, const PheromoneMap &pheromoneMap)
 
 			checkedPheromone = pheromoneMap.Get(searchForPheromoneType, checkMapPos);
 
-//			if ( m_state == SearchForFood && pheromoneMap.Get(PheromoneType::Lost, checkMapPos) >= checkedPheromone )
-//			{
-//				m_ignorePheromones = true;
-//				m_deviationResetTimer.Reset();
-//				return;
-//			}
+			if ( m_state == SearchForFood &&
+			     pheromoneMap.Get(PheromoneType::Lost, checkMapPos) > checkedPheromone )
+			{
+				m_ignorePheromones   = true;
+				m_decreasePheromones = true;
+				m_deviationResetTimer.Reset();
+				return;
+			}
 
 			if ( checkedPheromone > strongestPheromone )
 			{
@@ -363,10 +383,11 @@ void Ant::CheckNestCollision(const TileMap &tileMap, const IntVec2 &mapPos)
 			}
 		}
 
-		m_pheromoneStrength = 1;
-		m_deliveredFood     = true;
-		m_gotFood           = false;
-		m_state             = SearchForFood;
+		m_pheromoneStrength  = 1;
+		m_deliveredFood      = true;
+		m_gotFood            = false;
+		m_spawnLostPheromone = false;
+		m_state              = SearchForFood;
 		TurnBackward();
 	}
 }
@@ -377,8 +398,8 @@ void Ant::CheckFoodCollision(const TileMap &tileMap, const IntVec2 &mapPos)
 
 	if ( tileType == TileType::eFood )
 	{
-		m_takenFood         = true;
-		m_takenFoodPos      = mapPos;
-		m_state             = SearchForNest;
+		m_takenFood    = true;
+		m_takenFoodPos = mapPos;
+		m_state        = SearchForNest;
 	}
 }

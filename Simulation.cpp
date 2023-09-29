@@ -337,12 +337,12 @@ void Simulation::SettingsGui()
 //			m_world->ClearPheromones();
 //		}
 //
-//		ImGui::SameLine();
-//
-//		if ( ImGui::Button("Clear map"))
-//		{
-//			m_world->ClearMap();
-//		}
+		ImGui::SameLine();
+
+		if ( ImGui::Button("Clear map"))
+		{
+			m_world->ClearMap();
+		}
 
 		if ( ImGui::Button("Reset camera"))
 		{

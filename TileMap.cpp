@@ -51,6 +51,27 @@ void TileMap::SetTile(const IntVec2 &pos, TileType newType)
 	UpdateColorMap(pos);
 }
 
+// Doesn't check bounds, doesn't update colorMap, doesn't color update by neighbours
+void TileMap::UnsafeSetTile(int x, int y, TileType newType)
+{
+	m_tiles[y][x]->ChangeType(newType, m_nest);
+//	m_colorMap->Set(x, y, m_tiles[y][x]->GetColor());
+}
+
+void TileMap::Update()
+{
+#pragma omp parallel for collapse(2) default(none)
+	for(int y = 0; y < m_height; ++y)
+	{
+		for(int x = 0; x < m_width; ++x)
+		{
+			UpdateTileColor({x, y});
+		}
+	}
+
+	m_colorMap->Update();
+}
+
 bool TileMap::TakeFood(const IntVec2 &pos)
 {
 	if ( !m_boundsChecker.IsInBounds(pos))
@@ -72,6 +93,11 @@ void TileMap::Clear()
 	{
 		for ( int x = 0; x < m_width; ++x )
 		{
+			if ( m_tiles[y][x]->GetType() == TileType::eNest )
+			{
+				continue;
+			}
+
 			m_tiles[y][x]->ChangeType(TileType::eEmpty);
 			UpdateColorMap({x, y});
 		}
@@ -91,10 +117,6 @@ void TileMap::UpdateColorMap(const IntVec2 &pos)
 
 void TileMap::UpdateTileColor(const IntVec2 &pos)
 {
-	if ( !m_boundsChecker.IsInBounds(pos))
-	{
-		return;
-	}
 	std::array<TileType, 4> neighbors{TileType::eEmpty, TileType::eEmpty, TileType::eEmpty, TileType::eEmpty};
 
 	for ( int i = 0; i < 4; ++i )
@@ -111,7 +133,7 @@ void TileMap::UpdateTileColor(const IntVec2 &pos)
 	}
 	m_tiles[pos.y][pos.x]->UpdateColorByNeighbors(neighbors);
 
-	UpdateColorMap(pos);
+	m_colorMap->Set(pos, m_tiles[pos.y][pos.x]->GetColor());
 }
 
 void TileMap::PlaceNest(Nest &nest)

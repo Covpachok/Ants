@@ -1,9 +1,8 @@
 #include "World.hpp"
 
-#include <algorithm>
-
-#include "Random.hpp"
 #include "Settings.hpp"
+
+#include "WorldGenerator.hpp"
 
 #include "omp.h"
 
@@ -47,73 +46,19 @@ void World::Erase()
 void World::GenerateMap()
 {
 	auto &globalSettings = Settings::Instance().GetGlobalSettings();
-	auto &genSettings    = Settings::Instance().GetMapGenerationSettings();
+	auto &genSettings    = Settings::Instance().GetWorldGenerationSettings();
 
 	int                                  width  = static_cast<int>(globalSettings.mapWidth);
 	int                                  height = static_cast<int>(globalSettings.mapHeight);
 
-	std::function<void(int, int, Color)> genFunc;
+	float Flo      = 0.75f, Fhi = 1.f;
+	float Wlo      = 0.0f, Whi = 0.15f;
+	float Clo      = 0.6f, Chi = 0.65f;
+	float size     = 7.f;
+	bool  changed  = false;
+	int   octaves  = 8.f;
+	float contrast = 2.25f;
+	float blur     = 2.f;
 
-	const auto foodOnly = [&](int x, int y, Color pixel) {
-		if ( pixel.r >= genSettings.mapGenFoodLowThreshold &&
-		     pixel.r <= genSettings.mapGenFoodHighThreshold )
-		{
-			m_tileMap->SetTile({x, y}, TileType::eFood);
-		}
-	};
-
-	const auto wallsOnly = [&](int x, int y, Color pixel) {
-		if ( pixel.r >= genSettings.mapGenWallLowThreshold &&
-		     pixel.r <= genSettings.mapGenWallHighThreshold )
-		{
-			m_tileMap->SetTile({x, y}, TileType::eWall);
-		}
-	};
-
-	const auto foodAndWalls = [&](int x, int y, Color pixel) {
-		foodOnly(x, y, pixel);
-		wallsOnly(x, y, pixel);
-	};
-
-	switch ( genSettings.mapGenSettings )
-	{
-		case MapGenSettings::eFoodOnly:
-			genFunc = foodOnly;
-			break;
-
-		case MapGenSettings::eWallsOnly:
-			genFunc = wallsOnly;
-			break;
-
-		case MapGenSettings::eFoodAndWalls:
-			genFunc = foodAndWalls;
-			break;
-
-		default:
-			return;
-
-	}
-
-	Image noiseImage = GenImagePerlinNoise(width, width, Random::Int(-10000, 10000),
-	                                       Random::Int(-10000, 10000), genSettings.mapGenNoiseScale);
-	ImageResizeCanvas(&noiseImage, width, height, 0, 0, BLACK);
-	ImageBlurGaussian(&noiseImage, genSettings.mapGenNoiseBlur);
-	ImageColorContrast(&noiseImage, genSettings.mapGenNoiseContrast);
-	Color *noiseColors = LoadImageColors(noiseImage);
-
-	UnloadImage(noiseImage);
-
-	for ( int y = 0; y < height; ++y )
-	{
-		const int rowIndex = y * width;
-		for ( int x        = 0; x < width; ++x )
-		{
-			const int   index      = rowIndex + x;
-			const Color noisePixel = noiseColors[index];
-
-			genFunc(x, y, noisePixel);
-		}
-	}
-
-	UnloadImageColors(noiseColors);
+	WorldGenerator::Generate(*m_tileMap, size / 2.f, contrast, blur, {Wlo, Whi}, {Flo, Fhi}, {Clo, Chi}, octaves);
 }

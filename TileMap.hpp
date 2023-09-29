@@ -18,6 +18,10 @@ public:
 	TileMap(int width, int height);
 
 	void SetTile(const IntVec2 &pos, TileType newType);
+	void UnsafeSetTile(int x, int y, TileType newType);
+
+	void Update();
+
 	void PlaceNest(Nest &nest);
 
 	bool TakeFood(const IntVec2 &pos);
@@ -28,6 +32,9 @@ public:
 	inline TileType GetTileType(const IntVec2 &pos) const { return GetTile(pos).GetType(); }
 
 	void Draw() const;
+
+	int GetWidth() const { return m_width; }
+	int GetHeight() const { return m_height; }
 
 private:
 	void UpdateColorMap(const IntVec2 &pos);

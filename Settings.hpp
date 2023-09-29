@@ -14,26 +14,26 @@
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(IntVec2, x, y)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Color, r, g, b, a)
 
-enum class MapGenSettings
+enum class TilesGeneration
 {
 	eNone, eFoodOnly, eWallsOnly, eFoodAndWalls, eAmount
 };
 
-NLOHMANN_JSON_SERIALIZE_ENUM(MapGenSettings, {
-	{ MapGenSettings::eNone, "none" },
-	{ MapGenSettings::eFoodOnly, "foodOnly" },
-	{ MapGenSettings::eWallsOnly, "wallsOnly" },
-	{ MapGenSettings::eFoodAndWalls, "foodAndWalls" },
-	{ MapGenSettings::eAmount, "amount" }
+NLOHMANN_JSON_SERIALIZE_ENUM(TilesGeneration, {
+	{ TilesGeneration::eNone, "none" },
+	{ TilesGeneration::eFoodOnly, "foodOnly" },
+	{ TilesGeneration::eWallsOnly, "wallsOnly" },
+	{ TilesGeneration::eFoodAndWalls, "foodAndWalls" },
+	{ TilesGeneration::eAmount, "amount" }
 })
 
 struct AntsSettings
 {
 	float antMovementSpeed        = 30 * 0.016;
-	float antRotationSpeed        = 10 * 0.016;
+	float antRotationSpeed        = 12 * 0.016;
 	float antRandomRotation       = 0.3;
 	int   antFovRange             = 8;
-	float pheromoneStrengthLoss   = 0.001;
+	float pheromoneStrengthLoss   = 0.00004;
 	float pheromoneSpawnIntensity = 128;
 	float pheromoneSpawnDelay     = 15;
 	float fovCheckDelay           = 3;
@@ -133,32 +133,32 @@ struct TileMapSettings
 			}
 	};
 
-	int foodDefaultAmount = 30;
+	int foodDefaultAmount = 32;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TileMapSettings,
                                    tileDefaultColors,
                                    foodDefaultAmount)
 
-struct MapGenerationSettings
+struct WorldGenerationSettings
 {
-	MapGenSettings mapGenSettings          = MapGenSettings::eFoodAndWalls;
-	float          mapGenNoiseScale        = 8.f;
-	int            mapGenNoiseBlur         = 2;
-	float          mapGenNoiseContrast     = 8;
-	uint8_t        mapGenFoodLowThreshold  = 0;
-	uint8_t        mapGenFoodHighThreshold = 64;
-	uint8_t        mapGenWallLowThreshold  = 160;
-	uint8_t        mapGenWallHighThreshold = 255;
+	TilesGeneration tilesGeneration = TilesGeneration::eFoodAndWalls;
+	float noiseScale          = 8.f;
+	int     noiseBlur              = 2;
+	float   noiseContrast          = 8;
+	uint8_t mapGenFoodLowThreshold = 0;
+	uint8_t foodThreshold          = 64;
+	uint8_t mapGenWallLowThreshold = 160;
+	uint8_t          mapGenWallHighThreshold = 255;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MapGenerationSettings,
-                                   mapGenSettings,
-                                   mapGenNoiseScale,
-                                   mapGenNoiseBlur,
-                                   mapGenNoiseContrast,
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldGenerationSettings,
+                                   tilesGeneration,
+                                   noiseScale,
+                                   noiseBlur,
+                                   noiseContrast,
                                    mapGenFoodLowThreshold,
-                                   mapGenFoodHighThreshold,
+                                   foodThreshold,
                                    mapGenWallLowThreshold,
                                    mapGenWallHighThreshold)
 
@@ -176,19 +176,19 @@ public:
 	static const Settings &Instance() { return *m_instance; }
 
 	// clang-format off
-	const AntsSettings          &GetAntsSettings()          const { return m_antsSettings; };
-	const AntColonySettings     &GetAntColonySettings()     const { return m_antColonySettings; };
-	const GlobalSettings        &GetGlobalSettings()        const { return m_globalSettings; };
-	const PheromoneMapSettings  &GetPheromoneMapSettings()  const { return m_pheromoneMapSettings; };
-	const TileMapSettings       &GetTileMapSettings()       const { return m_tileMapSettings; };
-	const MapGenerationSettings &GetMapGenerationSettings() const { return m_mapGenerationSettings; };
+	const AntsSettings              &GetAntsSettings()              const { return m_antsSettings; };
+	const AntColonySettings         &GetAntColonySettings()         const { return m_antColonySettings; };
+	const GlobalSettings            &GetGlobalSettings()            const { return m_globalSettings; };
+	const PheromoneMapSettings      &GetPheromoneMapSettings()      const { return m_pheromoneMapSettings; };
+	const TileMapSettings           &GetTileMapSettings()           const { return m_tileMapSettings; };
+	const WorldGenerationSettings   &GetWorldGenerationSettings()   const { return m_worldGenerationSettings; };
 
 	AntsSettings            &GetAntsSettings()            { return m_antsSettings; };
 	AntColonySettings       &GetAntColonySettings()       { return m_antColonySettings; };
 	GlobalSettings          &GetGlobalSettings()          { return m_globalSettings; };
 	PheromoneMapSettings    &GetPheromoneMapSettings()    { return m_pheromoneMapSettings; };
 	TileMapSettings         &GetTileMapSettings()         { return m_tileMapSettings; };
-	MapGenerationSettings   &GetMapGenerationSettings()   { return m_mapGenerationSettings; };
+	WorldGenerationSettings &GetWorldGenerationSettings() { return m_worldGenerationSettings; };
 	// clang-format on
 
 	void Save(const std::string &filename);
@@ -198,21 +198,21 @@ public:
 
 	void Reset()
 	{
-		m_antsSettings          = AntsSettings();
-		m_antColonySettings     = AntColonySettings();
-		m_globalSettings        = GlobalSettings();
-		m_pheromoneMapSettings  = PheromoneMapSettings();
-		m_tileMapSettings       = TileMapSettings();
-		m_mapGenerationSettings = MapGenerationSettings();
+		m_antsSettings            = AntsSettings();
+		m_antColonySettings       = AntColonySettings();
+		m_globalSettings          = GlobalSettings();
+		m_pheromoneMapSettings    = PheromoneMapSettings();
+		m_tileMapSettings         = TileMapSettings();
+		m_worldGenerationSettings = WorldGenerationSettings();
 	};
 
 private:
-	AntsSettings          m_antsSettings;
-	AntColonySettings     m_antColonySettings;
-	GlobalSettings        m_globalSettings;
-	PheromoneMapSettings  m_pheromoneMapSettings;
-	TileMapSettings       m_tileMapSettings;
-	MapGenerationSettings m_mapGenerationSettings;
+	AntsSettings            m_antsSettings;
+	AntColonySettings       m_antColonySettings;
+	GlobalSettings          m_globalSettings;
+	PheromoneMapSettings    m_pheromoneMapSettings;
+	TileMapSettings         m_tileMapSettings;
+	WorldGenerationSettings m_worldGenerationSettings;
 };
 
 #endif //ANTS_SETTINGS_HPP

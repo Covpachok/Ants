@@ -79,7 +79,7 @@ void PheromoneMap::Substract(PheromoneMap::Type pheromoneType, int x, int y, flo
 		return;
 	}
 
-	m_pheromones[pheromoneType][y][x] = std::max(m_pheromones[pheromoneType][y][x], 0);
+	m_pheromones[pheromoneType][y][x] = std::max(m_pheromones[pheromoneType][y][x] - intensity, 0.f);
 }
 
 void PheromoneMap::Set(Type pheromoneType, int x, int y, float intensity)

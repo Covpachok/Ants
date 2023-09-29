@@ -27,11 +27,16 @@ public:
 	inline void Set(int x, int y, const Color &color);
 	inline void Set(const IntVec2 &pos, const Color &intensity);
 
+	inline void UnsafeSet(int x, int y, const Color &color) { m_colors[y * m_width + x] = color; };
+
 	Color &GetMutable(int n);
 	inline Color &GetMutable(int x, int y);
 	inline Color &GetMutable(const IntVec2 &pos);
 
 	void Draw() const;
+
+	int GetWidth() const { return m_width; }
+	int GetHeight() const { return m_height; }
 
 private:
 	int m_width, m_height;

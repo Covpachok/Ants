@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <raylib.h>
+#include <array>
 
 #include "IntVec.hpp"
 #include "BoundsChecker.hpp"

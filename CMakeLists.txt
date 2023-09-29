@@ -31,7 +31,7 @@ set(SOURCE_FILES
         Utils/BoundsChecker.hpp
         ColorMap.cpp
         ColorMap.hpp
-        AntColony.cpp AntColony.hpp Gui.cpp Gui.hpp Statistics.cpp Statistics.hpp TileMapGenerator.cpp TileMapGenerator.hpp Test.hpp ColoniesManager.cpp ColoniesManager.hpp Aliases.hpp)
+        AntColony.cpp AntColony.hpp Gui.cpp Gui.hpp Statistics.cpp Statistics.hpp WorldGenerator.cpp WorldGenerator.hpp Test.hpp ColoniesManager.cpp ColoniesManager.hpp Aliases.hpp)
 
 set(IMGUI_FOLDER "libs/imgui-docking")
 

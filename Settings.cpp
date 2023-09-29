@@ -16,7 +16,7 @@ void Settings::Save(const std::string &filename)
 	j["Global"]        = m_globalSettings;
 	j["PheromoneMap"]  = m_pheromoneMapSettings;
 	j["TileMap"]       = m_tileMapSettings;
-	j["MapGeneration"] = m_mapGenerationSettings;
+	j["WorldGeneration"] = m_worldGenerationSettings;
 
 	f << std::setw(4) << j << std::endl;
 }
@@ -41,8 +41,8 @@ void Settings::Load(const std::string &filename)
 	m_antColonySettings     = data["AntColony"];
 	m_globalSettings        = data["Global"];
 	m_pheromoneMapSettings  = data["PheromoneMap"];
-	m_tileMapSettings       = data["TileMap"];
-	m_mapGenerationSettings = data["MapGeneration"];
+	m_tileMapSettings         = data["TileMap"];
+	m_worldGenerationSettings = data["WorldGeneration"];
 
 	m_globalSettings.Recalculate();
 }
