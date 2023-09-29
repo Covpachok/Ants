@@ -77,7 +77,7 @@ std::vector<std::vector<float>> BlurNoise(const std::vector<std::vector<float>> 
 std::vector<std::vector<float>>
 GenerateNoiseArray(int width, int height, float size, float contrast, float threshold, int octaves = 6)
 {
-	FastNoiseLite perlin(1);
+	FastNoiseLite perlin(Random::Int(0, INT32_MAX));
 	perlin.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 	perlin.SetFractalType(FastNoiseLite::FractalType_FBm);
 	perlin.SetFractalOctaves(octaves);
@@ -85,7 +85,7 @@ GenerateNoiseArray(int width, int height, float size, float contrast, float thre
 	perlin.SetFractalLacunarity(2);
 	perlin.SetFrequency(0.01);
 
-	FastNoiseLite cellular(1);
+	FastNoiseLite cellular(Random::Int(0, INT32_MAX));
 	cellular.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 	cellular.SetFractalType(FastNoiseLite::FractalType_Ridged);
 	cellular.SetFractalOctaves(octaves);

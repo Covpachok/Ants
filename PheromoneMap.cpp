@@ -106,7 +106,7 @@ void PheromoneMap::Evaporate()
 		{
 			m_pheromones[Food][y][x] = std::max(m_pheromones[Food][y][x] - m_evaporationRate, k_pheromoneMinIntensity);
 			m_pheromones[Nest][y][x] = std::max(m_pheromones[Nest][y][x] - m_evaporationRate, k_pheromoneMinIntensity);
-			m_pheromones[Lost][y][x] = std::max(m_pheromones[Lost][y][x] - m_evaporationRate, k_pheromoneMinIntensity);
+			m_pheromones[Lost][y][x] = std::max(m_pheromones[Lost][y][x] - m_evaporationRate * 8, k_pheromoneMinIntensity);
 			UpdateColor(x, y);
 		}
 	}
