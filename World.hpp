@@ -18,22 +18,22 @@ public:
 
 	void Update();
 
+	void Draw() const;
+
+	void ClearMap();
+	void Erase();
+
+	void GenerateMap();
+	bool LoadWorldFromImage(class Settings &settings, const std::string &imageName);
+
+	inline const BoundsChecker2D &BoundsChecker() const { return *m_boundsChecker; }
 	inline TileMap &GetTileMap() { return *m_tileMap; };
 	inline const TileMap &GetTileMap() const { return *m_tileMap; };
 
-	void ClearMap();
-
-	void Draw() const;
-
-	void Erase();
-
-	const BoundsChecker2D &BoundsChecker() const { return *m_boundsChecker; }
-
 private:
-	void GenerateMap();
-
-private:
-	int m_screenWidth, m_screenHeight;
+//	float m_screenToWorld;
+//	int m_screenWidth, m_screenHeight;
+	int m_worldWidth, m_worldHeight;
 
 	std::unique_ptr<TileMap> m_tileMap;
 

@@ -44,7 +44,7 @@ void Settings::Load(const std::string &filename)
 	m_tileMapSettings         = data["TileMap"];
 	m_worldGenerationSettings = data["WorldGeneration"];
 
-	m_globalSettings.Recalculate();
+//	m_globalSettings.Recalculate();
 }
 
 std::vector<std::string> Settings::FindSavedSettings()

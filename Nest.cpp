@@ -10,8 +10,10 @@ Nest::Nest(NestId id, AntColony *colony, const IntVec2 &pos, TileMap &tileMap) :
 	auto &globalSettings    = Settings::Instance().GetGlobalSettings();
 	auto &antColonySettings = Settings::Instance().GetAntColonySettings();
 
-	m_pos       = pos;
-	m_screenPos = globalSettings.WorldToScreen(m_pos);
+	m_pos = pos;
+	m_screenPos.x = pos.x;
+	m_screenPos.y = pos.y;
+	//m_screenPos = globalSettings.WorldToScreen(m_pos);
 
 	m_size       = antColonySettings.nestSize;
 	m_foodStored = 0;

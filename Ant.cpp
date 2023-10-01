@@ -19,6 +19,9 @@ Ant::Ant(AntId id, AntColonyId colonyId, const Vector2 &pos) :
 		m_state(SearchForFood),
 		m_antsSettings(Settings::Instance().GetAntsSettings())
 {
+	auto &settings = Settings::Instance();
+//	m_movementSpeed = m_antsSettings.antMovementSpeed * settings.GetGlobalSettings().screenToMapInverseRatio;
+
 	m_rotation        = Random::Float(-M_PI, M_PI);
 	m_desiredRotation = m_rotation;
 
@@ -28,7 +31,7 @@ Ant::Ant(AntId id, AntColonyId colonyId, const Vector2 &pos) :
 	m_pheromoneSpawnTimer.SetDelay(m_antsSettings.pheromoneSpawnDelay);
 	m_fovCheckTimer.SetDelay(m_antsSettings.fovCheckDelay);
 	m_deviationTimer.SetDelay(Random::Int(1000, 2000));
-	m_deviationResetTimer.SetDelay(50);
+	m_deviationResetTimer.SetDelay(25);
 	m_lostPheromoneTimer.SetDelay(1000);
 }
 
@@ -97,12 +100,8 @@ void Ant::PostUpdate(TileMap &tileMap, PheromoneMap &pheromoneMap)
 
 	if ( m_decreasePheromones )
 	{
-		auto          settings = Settings::Instance();
-		const IntVec2 pos      = settings.GetGlobalSettings().ScreenToWorld(m_prevPos);
-		pheromoneMap.Substract(PheromoneType::Food, pos.x, pos.y,
-		                       settings.GetPheromoneMapSettings().pheromoneEvaporationRate);
+		DecreasePheromone(pheromoneMap);
 	}
-
 }
 
 void Ant::Move()
@@ -134,12 +133,12 @@ void Ant::Rotate()
 
 void Ant::SpawnPheromone(PheromoneMap &pheromoneMap)
 {
-	const IntVec2 pos = Settings::Instance().GetGlobalSettings().ScreenToWorld(m_prevPos);
+	const IntVec2 pos = {m_pos.x, m_pos.y};//Settings::Instance().GetGlobalSettings().ScreenToWorld(m_prevPos);
 
 	if ( m_spawnLostPheromone )
 	{
-		pheromoneMap.Add(PheromoneType::Lost, pos.x, pos.y,
-		                 m_antsSettings.pheromoneSpawnIntensity * m_pheromoneStrength);
+//		pheromoneMap.Add(PheromoneType::Lost, pos.x, pos.y,
+//		                 m_antsSettings.pheromoneSpawnIntensity * m_pheromoneStrength);
 	}
 	else if ( m_gotFood )
 	{
@@ -153,9 +152,18 @@ void Ant::SpawnPheromone(PheromoneMap &pheromoneMap)
 	}
 }
 
+
+void Ant::DecreasePheromone(PheromoneMap &pheromoneMap) const
+{
+	auto          settings = Settings::Instance();
+	const IntVec2 pos      = {m_pos.x, m_pos.y};//settings.GetGlobalSettings().ScreenToWorld(m_prevPos);
+	pheromoneMap.Substract(PheromoneType::Food, pos.x, pos.y,
+	                       settings.GetPheromoneMapSettings().pheromoneEvaporationRate);
+}
+
 void Ant::CheckCollisions(const TileMap &tileMap)
 {
-	const IntVec2 checkMapPos = Settings::Instance().GetGlobalSettings().ScreenToWorld(m_pos);
+	const IntVec2 checkMapPos = {m_pos.x, m_pos.y};//Settings::Instance().GetGlobalSettings().ScreenToWorld(m_pos);
 
 	switch ( m_state )
 	{
@@ -175,7 +183,8 @@ void Ant::CheckCollisions(const TileMap &tileMap)
 	{
 		m_pos = m_prevPos;
 
-		const IntVec2 prevMapPos = Settings::Instance().GetGlobalSettings().ScreenToWorld(m_prevPos);
+		const IntVec2 prevMapPos = {m_prevPos.x,
+		                            m_prevPos.y};//Settings::Instance().GetGlobalSettings().ScreenToWorld(m_prevPos);
 
 		if ( !tileMap.GetTile(prevMapPos).IsPassable())
 		{
@@ -220,8 +229,8 @@ void Ant::CheckInFov(const TileMap &tileMap, const PheromoneMap &pheromoneMap)
 	int turnSide = 0;
 	int prevSide = 0;
 
-	float screenToMapRatio        = Settings::Instance().GetGlobalSettings().screenToMapRatio;
-	float screenToMapInverseRatio = Settings::Instance().GetGlobalSettings().screenToMapInverseRatio;
+//	float screenToMapRatio        = Settings::Instance().GetGlobalSettings().screenToMapRatio;
+//	float screenToMapInverseRatio = Settings::Instance().GetGlobalSettings().screenToMapInverseRatio;
 
 	PheromoneType searchForPheromoneType = PheromoneType::Nest;
 
@@ -239,7 +248,7 @@ void Ant::CheckInFov(const TileMap &tileMap, const PheromoneMap &pheromoneMap)
 
 	for ( int j = 1; j <= m_antsSettings.antFovRange && !foundObject; ++j )
 	{
-		const float multiplier = screenToMapRatio * static_cast<float>(j);
+		const float multiplier = static_cast<float>(j); //* screenToMapRatio;
 		for ( int   i          = -j / 2 - 1; i <= j / 2 + 1; ++i )
 		{
 			foundObject = false;
@@ -249,9 +258,10 @@ void Ant::CheckInFov(const TileMap &tileMap, const PheromoneMap &pheromoneMap)
 			checkPos.x = m_pos.x + checkRotations[side + 1][0] * multiplier;
 			checkPos.y = m_pos.y + checkRotations[side + 1][1] * multiplier;
 
-			const IntVec2 &checkMapPos = {checkPos.x * screenToMapInverseRatio, checkPos.y *
-			                                                                    screenToMapInverseRatio}; //world.ScreenToWorld(checkPos.x, checkPos.y);
-			const Tile    &tile        = tileMap.GetTile(checkMapPos);
+//			const IntVec2 &checkMapPos = {checkPos.x * screenToMapInverseRatio, checkPos.y *
+//			                                                                    screenToMapInverseRatio}; //world.ScreenToWorld(checkPos.x, checkPos.y);
+			IntVec2    checkMapPos = {checkPos.x, checkPos.y};
+			const Tile &tile       = tileMap.GetTile(checkMapPos);
 
 			if ( tile.GetType() == TileType::eFood && m_state == SearchForFood )
 			{
@@ -312,16 +322,16 @@ void Ant::ChangeDesiredRotation(Vector2 desiredPos)
 
 void Ant::Draw()
 {
-//	DrawRectangle(m_pos.x, m_pos.y, 1, 1, *m_colorsPtr[m_gotFood]);
-	DrawRectanglePro(Rectangle{m_pos.x, m_pos.y, 2.5f, 1.25f}, {0, 0}, m_rotation * ( 180.0 / M_PI ),
+	DrawRectanglePro(Rectangle{m_pos.x, m_pos.y, 2.5f, 1.25f}, {1.25f, 0.625f}, m_rotation * ( 180.0 / M_PI ),
 	                 *m_colorsPtr[m_gotFood]);
-//	DrawCircleSector(m_pos, 2, 0, 360, 1, *m_colorsPtr[m_gotFood]);
 }
 
 void Ant::StayInBounds()
 {
-	const auto width  = static_cast<float>(Settings::Instance().GetGlobalSettings().windowWidth);
-	const auto height = static_cast<float>(Settings::Instance().GetGlobalSettings().windowHeight);
+	const auto width  = static_cast<float>(Settings::Instance().GetGlobalSettings().mapWidth);
+	//* Settings::Instance().GetGlobalSettings().screenToMapRatio;
+	const auto height = static_cast<float>(Settings::Instance().GetGlobalSettings().mapHeight);
+	//* Settings::Instance().GetGlobalSettings().screenToMapRatio;
 
 	bool outOfBounds = false;
 

@@ -43,9 +43,9 @@ void TileMap::SetTile(const IntVec2 &pos, TileType newType)
 	m_tiles[pos.y][pos.x]->ChangeType(newType, m_nest);
 
 	UpdateTileColor(pos);
-	for ( int i = 0; i < 4; ++i )
+	for (auto deltaPos : k_deltaPos)
 	{
-		UpdateTileColor(pos + k_deltaPos[i]);
+		UpdateTileColor(pos + deltaPos);
 	}
 
 	UpdateColorMap(pos);

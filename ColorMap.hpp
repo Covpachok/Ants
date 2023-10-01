@@ -42,7 +42,7 @@ private:
 	int m_width, m_height;
 	int m_size;
 
-	float m_screenToMapRatio;
+//	float m_screenToMapRatio;
 
 	Color m_defaultColor;
 	Color m_errorColor = BLACK;

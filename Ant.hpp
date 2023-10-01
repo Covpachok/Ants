@@ -43,6 +43,7 @@ private:
 	void StayInBounds();
 
 	void SpawnPheromone(PheromoneMap &pheromoneMap);
+	void DecreasePheromone(PheromoneMap &pheromoneMap) const;
 
 	void CheckInFov(const TileMap &tileMap, const PheromoneMap &pheromoneMap);
 	void CheckCollisions(const TileMap &tileMap);
@@ -71,9 +72,9 @@ private:
 
 	const AntsSettings &m_antsSettings;
 
-	const Color *m_colorsPtr[2];
+	const Color *m_colorsPtr[2]{};
 
-	float m_movementSpeed;
+	float m_movementSpeed{};
 
 	float m_rotation;
 	float m_desiredRotation;

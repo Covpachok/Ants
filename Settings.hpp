@@ -10,9 +10,11 @@
 
 #include "IntVec.hpp"
 #include "Tile.hpp"
+#include "WorldGenerator.hpp"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(IntVec2, x, y)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Color, r, g, b, a)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Range, low, high)
 
 enum class TilesGeneration
 {
@@ -79,37 +81,37 @@ struct GlobalSettings
 	size_t windowWidth  = 1280;
 	size_t windowHeight = 720;
 
-	float screenToMapRatio        = 2.f;
-	float screenToMapInverseRatio = 1.f / screenToMapRatio;
+//	float screenToMapRatio        = 1.f;
+//	float screenToMapInverseRatio = 1.f / screenToMapRatio;
 
-	size_t mapWidth  = static_cast<size_t>(static_cast<float>(windowWidth) / screenToMapRatio);
-	size_t mapHeight = static_cast<size_t>(static_cast<float>(windowHeight) / screenToMapRatio);
+	size_t mapWidth  = 640; //static_cast<size_t>(static_cast<float>(windowWidth) / screenToMapRatio);
+	size_t mapHeight = 360; //static_cast<size_t>(static_cast<float>(windowHeight) / screenToMapRatio);
 
-	IntVec2 ScreenToWorld(const Vector2 &pos) const
-	{
-		return {pos.x * screenToMapInverseRatio, pos.y * screenToMapInverseRatio};
-	}
-	Vector2 WorldToScreen(const IntVec2 &pos) const
-	{
-		return {static_cast<float>(pos.x) * screenToMapRatio, static_cast<float>(pos.y) * screenToMapRatio};
-	}
+//	IntVec2 ScreenToWorld(const Vector2 &pos) const
+//	{
+//		return {pos.x * screenToMapInverseRatio, pos.y * screenToMapInverseRatio};
+//	}
+//	Vector2 WorldToScreen(const IntVec2 &pos) const
+//	{
+//		return {static_cast<float>(pos.x) * screenToMapRatio, static_cast<float>(pos.y) * screenToMapRatio};
+//	}
 
-	void Recalculate()
-	{
-		screenToMapInverseRatio = 1.f / screenToMapRatio;
-		mapWidth                = static_cast<size_t>(static_cast<float>(windowWidth) / screenToMapRatio);
-		mapHeight               = static_cast<size_t>(static_cast<float>(windowHeight) / screenToMapRatio);
-	};
+//	void Recalculate()
+//	{
+//		mapWidth  = static_cast<size_t>(static_cast<float>(windowWidth) / screenToMapRatio);
+//		mapHeight = static_cast<size_t>(static_cast<float>(windowHeight) / screenToMapRatio);
+//	}
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GlobalSettings,
                                    windowWidth,
                                    windowHeight,
-                                   screenToMapRatio)
+								   mapWidth,
+								   mapHeight)
 
 struct PheromoneMapSettings
 {
-	float pheromoneEvaporationRate = 0.016f;
+	float pheromoneEvaporationRate = 0.005f;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PheromoneMapSettings,
@@ -143,24 +145,28 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TileMapSettings,
 struct WorldGenerationSettings
 {
 	TilesGeneration tilesGeneration = TilesGeneration::eFoodAndWalls;
-	float noiseScale          = 8.f;
-	int     noiseBlur              = 2;
-	float   noiseContrast          = 8;
-	uint8_t mapGenFoodLowThreshold = 0;
-	uint8_t foodThreshold          = 64;
-	uint8_t mapGenWallLowThreshold = 160;
-	uint8_t          mapGenWallHighThreshold = 255;
+
+	int   seed            = 1;
+	float noiseScale      = 7.f;
+	int   noiseOctaves    = 8;
+	float noiseContrast   = 2.25f;
+	float noiseBlur       = 2.f;
+	float ridgesIntensity = 0.6f;
+
+	Range foodSpawnRange;
+	Range wallSpawnRange;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldGenerationSettings,
                                    tilesGeneration,
+                                   seed,
                                    noiseScale,
+                                   noiseOctaves,
                                    noiseBlur,
                                    noiseContrast,
-                                   mapGenFoodLowThreshold,
-                                   foodThreshold,
-                                   mapGenWallLowThreshold,
-                                   mapGenWallHighThreshold)
+                                   ridgesIntensity,
+                                   foodSpawnRange,
+                                   wallSpawnRange)
 
 class Settings
 {
@@ -196,7 +202,7 @@ public:
 
 	static std::vector<std::string> FindSavedSettings();
 
-	void Reset()
+	inline void Reset()
 	{
 		m_antsSettings            = AntsSettings();
 		m_antColonySettings       = AntColonySettings();

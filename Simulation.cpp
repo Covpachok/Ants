@@ -3,6 +3,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 #include <rlImGui.h>
 
 #include "Simulation.hpp"
@@ -105,7 +106,7 @@ void Simulation::HandleInput()
 
 	if ( IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 	{
-		auto pos = m_settings.GetGlobalSettings().ScreenToWorld(mouseWorldPos);
+		IntVec2 pos = {mouseWorldPos.x, mouseWorldPos.y};//m_settings.GetGlobalSettings().ScreenToWorld(mouseWorldPos);
 
 		m_brush.Paint(m_world->GetTileMap(), pos.x, pos.y);
 	}
@@ -355,6 +356,15 @@ void Simulation::SettingsGui()
 
 		ImGui::Text("(Some values will change only after simulation restart)");
 
+		static std::string fileName;
+		ImGui::InputText("image", &fileName);
+		if ( ImGui::Button("load world from image"))
+		{
+			if ( m_world->LoadWorldFromImage(m_settings, fileName))
+			{
+				m_coloniesManager = std::make_unique<ColoniesManager>(m_world->GetTileMap());
+			}
+		}
 	}
 	ImGui::End();
 }
