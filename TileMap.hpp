@@ -48,10 +48,9 @@ private:
 
 	BoundsChecker2D m_boundsChecker;
 
-	Tile m_errorTile{{-1, -1}, TileType::eWall};
+	Tile m_errorTile{TileType::eWall};
 
-	bool m_placingNest = false;
-	Nest *m_nest       = nullptr;
+	Nest *m_nest = nullptr;
 };
 
 const Tile &TileMap::GetTile(const IntVec2 &pos) const

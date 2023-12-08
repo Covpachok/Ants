@@ -5,11 +5,19 @@
 #include "World.hpp"
 #include "Settings.hpp"
 #include "Brush.hpp"
+#include "Gui.hpp"
 
 #include <string>
 
+class Gui;
+
 class Simulation
 {
+	friend class Gui;
+
+	const float k_minGameSpeed = 0.1f;
+	const float k_maxGameSpeed = 30.f;
+
 public:
 	Simulation();
 	~Simulation();
@@ -23,22 +31,19 @@ private:
 
 	void ResetCamera();
 
-	// Should put it in a different class
 	void ShowGui();
-	void StatisticsGui();
-	void SettingsGui();
-	void AdvancedSettingsGui();
 
 	void Reset();
 private:
 	Settings m_settings;
+	Gui m_gui;
 
 	std::unique_ptr<World> m_world;
 	std::unique_ptr<ColoniesManager> m_coloniesManager;
 
 	float m_gameSpeed = 1;
 
-	Camera2D m_camera;
+	Camera2D m_camera{};
 
 	Brush m_brush;
 
@@ -49,8 +54,9 @@ private:
 	bool m_drawAnts = true;
 
 	bool m_shouldHandleInput = true;
-	bool m_adaptiveSpeed     = false;
+	bool m_adaptiveSpeed     = true;
 
+	bool m_showGui = true;
 	bool m_showAdvancedSettings = false;
 
 	std::string m_saveFilename = "save";

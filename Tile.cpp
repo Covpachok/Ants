@@ -2,8 +2,7 @@
 
 #include "Settings.hpp"
 
-Tile::Tile(const IntVec2 &pos, TileType type) :
-		m_pos(pos)
+Tile::Tile(TileType type)
 {
 	ChangeType(type);
 }

@@ -106,7 +106,7 @@ void PheromoneMap::Evaporate()
 		{
 			m_pheromones[Food][y][x] = std::max(m_pheromones[Food][y][x] - m_evaporationRate, k_pheromoneMinIntensity);
 			m_pheromones[Nest][y][x] = std::max(m_pheromones[Nest][y][x] - m_evaporationRate, k_pheromoneMinIntensity);
-			m_pheromones[Lost][y][x] = std::max(m_pheromones[Lost][y][x] - m_evaporationRate * 8, k_pheromoneMinIntensity);
+			m_pheromones[Lost][y][x] = std::max(m_pheromones[Lost][y][x] - m_evaporationRate * 32, k_pheromoneMinIntensity);
 			UpdateColor(x, y);
 		}
 	}
@@ -115,9 +115,22 @@ void PheromoneMap::Evaporate()
 void PheromoneMap::UpdateColor(int x, int y)
 {
 	auto &color = m_colorMap.GetMutable(x, y);
-	color.r = static_cast<unsigned char>(m_pheromones[Lost][y][x]);
-	color.g = static_cast<unsigned char>(m_pheromones[Food][y][x]);
-	color.b = static_cast<unsigned char>(m_pheromones[Nest][y][x]);
+	auto r = static_cast<unsigned char>(m_pheromones[Lost][y][x]);
+	auto g = static_cast<unsigned char>(m_pheromones[Food][y][x]);
+	auto b = static_cast<unsigned char>(m_pheromones[Nest][y][x]);
+
+	if(r > g)
+	{
+		color.r = static_cast<unsigned char>(m_pheromones[Lost][y][x]);
+		color.g = 0;
+		color.b = 0;
+	}
+	else
+	{
+		color.r = 0;
+		color.g = static_cast<unsigned char>(m_pheromones[Food][y][x]);
+		color.b = static_cast<unsigned char>(m_pheromones[Nest][y][x]);
+	}
 
 	int sum = color.r;
 	sum += color.g;

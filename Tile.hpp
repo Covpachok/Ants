@@ -21,7 +21,7 @@ private:
 	inline static constexpr std::bitset<Tile::eAmount> s_tilesPassability = 0b1001;
 
 public:
-	Tile(const IntVec2 &pos, TileType type);
+	Tile(TileType type);
 
 	void UpdateColorByNeighbors(const std::array<TileType, 4> &neighborTypes);
 
@@ -30,7 +30,6 @@ public:
 	inline bool Take() { return --m_amount <= 0; };
 
 	inline Nest *GetNest() const { return m_nest; };
-	inline IntVec2 GetPos() const { return m_pos; };
 	inline TileType GetType() const { return m_type; };
 	inline Color GetColor() const { return m_color; };
 	inline Color GetDefaultColor() const { return m_defaultColor; };
@@ -38,7 +37,6 @@ public:
 	inline bool IsPassable() const { return s_tilesPassability[m_type]; }
 
 private:
-	IntVec2  m_pos;
 	TileType m_type;
 
 	Color m_color;

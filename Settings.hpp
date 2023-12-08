@@ -11,6 +11,7 @@
 #include "IntVec.hpp"
 #include "Tile.hpp"
 #include "WorldGenerator.hpp"
+#include "AntColony.hpp"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(IntVec2, x, y)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Color, r, g, b, a)
@@ -31,17 +32,22 @@ NLOHMANN_JSON_SERIALIZE_ENUM(TilesGeneration, {
 
 struct AntsSettings
 {
-	float antMovementSpeed        = 30 * 0.016;
-	float antRotationSpeed        = 12 * 0.016;
-	float antRandomRotation       = 0.3;
-	int   antFovRange             = 8;
+	float antMovementSpeed        = 0.4f;
+	float antRotationSpeed        = 0.225f;//0.25f;
+	float antRandomRotation       = 0.2f;
+
+	int   antFovRange             = 8; // Heavily affects performance
+
 	float pheromoneStrengthLoss   = 0.00004;
-	float pheromoneSpawnIntensity = 128;
-	float pheromoneSpawnDelay     = 15;
-	float fovCheckDelay           = 3;
+	float pheromoneSpawnIntensity = 128; // Better not to change
+	float pheromoneSpawnDelay     = 20; // Better not to change
+
+	float fovCheckDelay           = 3; // Better not to change
+
 	Color antDefaultColor         = {128, 128, 255, 128};
 	Color antWithFoodColor        = {128, 255, 128, 128};
 };
+
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntsSettings,
                                    antMovementSpeed,
@@ -55,63 +61,28 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntsSettings,
                                    antDefaultColor,
                                    antWithFoodColor)
 
-struct AntColonySettings
-{
-	size_t coloniesAmount = 1;
-	int    foodToSpawnAnt = 10;
-
-	int antsStartAmount = 1000;
-	int antsMaxAmount   = 2500;
-
-	float antDeathDelay = 10;
-
-	int nestSize = 5;
-};
-
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntColonySettings,
                                    coloniesAmount,
-                                   foodToSpawnAnt,
                                    antsStartAmount,
                                    antsMaxAmount,
+								   dynamicLife,
                                    antDeathDelay,
+                                   foodToSpawnAnt,
                                    nestSize)
 
 struct GlobalSettings
 {
-	size_t windowWidth  = 1280;
-	size_t windowHeight = 720;
-
-//	float screenToMapRatio        = 1.f;
-//	float screenToMapInverseRatio = 1.f / screenToMapRatio;
-
-	size_t mapWidth  = 640; //static_cast<size_t>(static_cast<float>(windowWidth) / screenToMapRatio);
-	size_t mapHeight = 360; //static_cast<size_t>(static_cast<float>(windowHeight) / screenToMapRatio);
-
-//	IntVec2 ScreenToWorld(const Vector2 &pos) const
-//	{
-//		return {pos.x * screenToMapInverseRatio, pos.y * screenToMapInverseRatio};
-//	}
-//	Vector2 WorldToScreen(const IntVec2 &pos) const
-//	{
-//		return {static_cast<float>(pos.x) * screenToMapRatio, static_cast<float>(pos.y) * screenToMapRatio};
-//	}
-
-//	void Recalculate()
-//	{
-//		mapWidth  = static_cast<size_t>(static_cast<float>(windowWidth) / screenToMapRatio);
-//		mapHeight = static_cast<size_t>(static_cast<float>(windowHeight) / screenToMapRatio);
-//	}
+	size_t mapWidth  = 640;
+	size_t mapHeight = 360;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GlobalSettings,
-                                   windowWidth,
-                                   windowHeight,
-								   mapWidth,
-								   mapHeight)
+                                   mapWidth,
+                                   mapHeight)
 
 struct PheromoneMapSettings
 {
-	float pheromoneEvaporationRate = 0.005f;
+	float pheromoneEvaporationRate = 0.015f;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PheromoneMapSettings,
@@ -153,8 +124,8 @@ struct WorldGenerationSettings
 	float noiseBlur       = 2.f;
 	float ridgesIntensity = 0.6f;
 
-	Range foodSpawnRange;
-	Range wallSpawnRange;
+	Range foodSpawnRange{0.75f, 1.f};
+	Range wallSpawnRange{0.f, 0.15f};
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldGenerationSettings,

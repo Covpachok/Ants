@@ -74,8 +74,6 @@ private:
 
 	const Color *m_colorsPtr[2]{};
 
-	float m_movementSpeed{};
-
 	float m_rotation;
 	float m_desiredRotation;
 

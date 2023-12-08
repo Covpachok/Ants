@@ -1,3 +1,4 @@
+#include <iostream>
 #include "TileMap.hpp"
 
 #include "Settings.hpp"
@@ -5,7 +6,7 @@
 
 #include "Nest.hpp"
 
-const IntVec2 k_deltaPos[4] = {
+const IntVec2 k_directionsPos[4] = {
 		{1,  0},
 		{0,  1},
 		{-1, 0},
@@ -23,7 +24,7 @@ TileMap::TileMap(int width, int height) :
 		m_tiles[y].resize(m_width);
 		for ( int x = 0; x < m_width; ++x )
 		{
-			m_tiles[y][x] = std::make_unique<Tile>(IntVec2{x, y}, TileType::eEmpty);
+			m_tiles[y][x] = std::make_unique<Tile>(TileType::eEmpty);
 			m_colorMap->Set(x, y, m_tiles[y][x]->GetColor());
 		}
 		m_tiles[y].shrink_to_fit();
@@ -43,7 +44,7 @@ void TileMap::SetTile(const IntVec2 &pos, TileType newType)
 	m_tiles[pos.y][pos.x]->ChangeType(newType, m_nest);
 
 	UpdateTileColor(pos);
-	for (auto deltaPos : k_deltaPos)
+	for ( auto deltaPos: k_directionsPos )
 	{
 		UpdateTileColor(pos + deltaPos);
 	}
@@ -61,9 +62,9 @@ void TileMap::UnsafeSetTile(int x, int y, TileType newType)
 void TileMap::Update()
 {
 #pragma omp parallel for collapse(2) default(none)
-	for(int y = 0; y < m_height; ++y)
+	for ( int y = 0; y < m_height; ++y )
 	{
-		for(int x = 0; x < m_width; ++x)
+		for ( int x = 0; x < m_width; ++x )
 		{
 			UpdateTileColor({x, y});
 		}
@@ -117,11 +118,16 @@ void TileMap::UpdateColorMap(const IntVec2 &pos)
 
 void TileMap::UpdateTileColor(const IntVec2 &pos)
 {
+	if ( !m_boundsChecker.IsInBounds(pos))
+	{
+		return;
+	}
+
 	std::array<TileType, 4> neighbors{TileType::eEmpty, TileType::eEmpty, TileType::eEmpty, TileType::eEmpty};
 
 	for ( int i = 0; i < 4; ++i )
 	{
-		auto nPos = pos + k_deltaPos[i];
+		auto nPos = pos + k_directionsPos[i];
 		if ( m_boundsChecker.IsInBounds(nPos))
 		{
 			neighbors[i] = m_tiles[nPos.y][nPos.x]->GetType();

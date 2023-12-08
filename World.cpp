@@ -54,14 +54,10 @@ void World::GenerateMap()
 	auto &globalSettings = Settings::Instance().GetGlobalSettings();
 	auto &genSettings    = Settings::Instance().GetWorldGenerationSettings();
 
-	int width  = static_cast<int>(globalSettings.mapWidth);
-	int height = static_cast<int>(globalSettings.mapHeight);
-
 	float Flo      = 0.75f, Fhi = 1.f;
 	float Wlo      = 0.0f, Whi = 0.15f;
 	float Clo      = 0.6f, Chi = 0.65f;
 	float size     = 7.f;
-	bool  changed  = false;
 	int   octaves  = 8.f;
 	float contrast = 2.25f;
 	float blur     = 2.f;
@@ -93,7 +89,6 @@ bool World::LoadWorldFromImage(Settings &settings, const std::string &imageName)
 	settings.GetGlobalSettings().mapHeight = image.height;
 	m_worldWidth  = image.width;
 	m_worldHeight = image.height;
-//	settings.GetGlobalSettings().RecalculateRatios();
 
 	m_tileMap       = std::make_unique<TileMap>(image.width, image.height);
 	m_boundsChecker = std::make_unique<BoundsChecker2D>(0, image.width, 0, image.height);

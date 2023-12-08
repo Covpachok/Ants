@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "AntColony.hpp"
 #include "Ant.hpp"
 
@@ -8,12 +6,15 @@
 #include "omp.h"
 
 AntColony::AntColony(AntColonyId id, const Vector2 &antsSpawnPos) :
-		m_id(id)
+		m_id(id), m_initialAntsSpawnPos(antsSpawnPos)
 {
-	auto &settings = Settings::Instance();
+	auto &settings          = Settings::Instance();
+	auto &antColonySettings = settings.GetAntColonySettings();
 
-	m_antsAmount    = settings.GetAntColonySettings().antsStartAmount;
-	m_maxAntsAmount = Settings::Instance().GetAntColonySettings().antsMaxAmount;
+	m_antsAmount    = antColonySettings.antsStartAmount;
+	m_maxAntsAmount = antColonySettings.antsMaxAmount;
+	m_antDeathDelay = antColonySettings.antDeathDelay;
+	m_dynamicLife   = antColonySettings.dynamicLife;
 
 	m_ants.resize(m_maxAntsAmount);
 	for ( size_t i = 0; i < m_maxAntsAmount; ++i )
@@ -25,17 +26,14 @@ AntColony::AntColony(AntColonyId id, const Vector2 &antsSpawnPos) :
 	m_pheromoneMap = std::make_unique<PheromoneMap>(globalSettings.mapWidth, globalSettings.mapHeight,
 	                                                settings.GetPheromoneMapSettings().pheromoneEvaporationRate);
 
-	m_pheromoneSpawnTimer.SetDelay(settings.GetAntsSettings().pheromoneSpawnDelay);
-	m_fovCheckTimer.SetDelay(settings.GetAntsSettings().fovCheckDelay);
-	m_antDeathTimer.SetDelay(settings.GetAntColonySettings().antDeathDelay);
-
-	std::cout << m_antsAmount << std::endl;
-	std::cout << antsSpawnPos.x << " " << antsSpawnPos.y << std::endl;
+//	m_pheromoneSpawnTimer.SetDelay(settings.GetAntsSettings().pheromoneSpawnDelay);
+//	m_fovCheckTimer.SetDelay(settings.GetAntsSettings().fovCheckDelay);
+	OnAntsAmountChanged();
 }
 
 void AntColony::Update(TileMap &tileMap)
 {
-//	UpdateTimers();
+	UpdateTimers();
 
 #pragma omp parallel for default(none) shared(m_ants, tileMap, m_pheromoneMap)
 	for ( size_t i = 0; i < m_antsAmount; ++i )
@@ -57,32 +55,42 @@ void AntColony::SpawnAnt(const Vector2 &pos)
 	{
 		return;
 	}
-//	++m_antsAmount;
+
+	++m_antsAmount;
+
+	OnAntsAmountChanged();
 }
 
 void AntColony::RemoveAnt(AntId id)
 {
-	if ( id > m_antsAmount )
+	if ( id >= m_antsAmount )
 	{
 		return;
 	}
 
 	std::unique_ptr<Ant> &antToRemove = m_ants[id];
-	std::unique_ptr<Ant> &antToSwap   = m_ants[m_antsAmount];
+	std::unique_ptr<Ant> &antToSwap   = m_ants[m_antsAmount - 1];
 
-	// Will it work?
-	// Idk
-	antToRemove = nullptr;
+	antToRemove = std::make_unique<Ant>(antToSwap->GetId(), m_id, m_initialAntsSpawnPos);
 	antToSwap->SetId(id);
 	antToSwap.swap(antToRemove);
 	--m_antsAmount;
+
+	OnAntsAmountChanged();
 }
 
 void AntColony::UpdateTimers()
 {
-	m_pheromoneSpawnTimer.Update(1);
+//	m_pheromoneSpawnTimer.Update(1);
+//	m_fovCheckTimer.Update(1);
+
 	m_antDeathTimer.Update(1);
-	m_fovCheckTimer.Update(1);
+
+	if ( m_dynamicLife && m_antDeathTimer.IsElapsed())
+	{
+		RemoveAnt(0);
+		m_antDeathTimer.Reset();
+	}
 }
 
 void AntColony::DrawAnts() const
@@ -96,4 +104,9 @@ void AntColony::DrawAnts() const
 void AntColony::DrawPheromones() const
 {
 	m_pheromoneMap->Draw();
+}
+
+void AntColony::OnAntsAmountChanged()
+{
+	m_antDeathTimer.SetDelay(ceil(m_antDeathDelay - m_antDeathDelay * ( m_antsAmount / m_maxAntsAmount )));
 }

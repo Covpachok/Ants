@@ -37,11 +37,20 @@ void PaintRound(TileMap &tileMap, Brush &brush, int x, int y)
 	}
 }
 
-
-const std::function<void(TileMap &, Brush &, int x, int y)> k_paintFunctions[Brush::Amount] = {PaintPoint, PaintSquare,
-                                                                                               PaintRound};
-
 void Brush::Paint(TileMap &tileMap, int x, int y)
 {
-	k_paintFunctions[m_brushType](tileMap, *this, x, y);
+	switch ( m_brushType )
+	{
+		case Point:
+			PaintPoint(tileMap, *this, x, y);
+			break;
+		case Square:
+			PaintSquare(tileMap, *this, x, y);
+			break;
+		case Round:
+			PaintRound(tileMap, *this, x, y);
+			break;
+		case Amount:
+			break;
+	}
 }

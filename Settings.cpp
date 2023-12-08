@@ -11,11 +11,11 @@ void Settings::Save(const std::string &filename)
 	std::ofstream f(filename + ".json");
 	json          j;
 
-	j["Ants"]          = m_antsSettings;
-	j["AntColony"]     = m_antColonySettings;
-	j["Global"]        = m_globalSettings;
-	j["PheromoneMap"]  = m_pheromoneMapSettings;
-	j["TileMap"]       = m_tileMapSettings;
+	j["Ants"]            = m_antsSettings;
+	j["AntColony"]       = m_antColonySettings;
+	j["Global"]          = m_globalSettings;
+	j["PheromoneMap"]    = m_pheromoneMapSettings;
+	j["TileMap"]         = m_tileMapSettings;
 	j["WorldGeneration"] = m_worldGenerationSettings;
 
 	f << std::setw(4) << j << std::endl;
@@ -37,10 +37,10 @@ void Settings::Load(const std::string &filename)
 
 	std::cout << std::setw(4) << data << std::endl;
 
-	m_antsSettings          = data["Ants"];
-	m_antColonySettings     = data["AntColony"];
-	m_globalSettings        = data["Global"];
-	m_pheromoneMapSettings  = data["PheromoneMap"];
+	m_antsSettings            = data["Ants"];
+	m_antColonySettings       = data["AntColony"];
+	m_globalSettings          = data["Global"];
+	m_pheromoneMapSettings    = data["PheromoneMap"];
 	m_tileMapSettings         = data["TileMap"];
 	m_worldGenerationSettings = data["WorldGeneration"];
 

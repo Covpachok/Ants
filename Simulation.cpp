@@ -3,20 +3,26 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <imgui.h>
-#include <misc/cpp/imgui_stdlib.h>
 #include <rlImGui.h>
 
 #include "Simulation.hpp"
+#include "Gui.hpp"
 
 const int k_screenWidth  = 1280;
 const int k_screenHeight = 720;
+
+const float k_adaptiveSpeedStep = 0.005f;
+
+const int k_fpsLowThreshold  = 30;
+const int k_fpsHighThreshold = 120;
 
 constexpr float k_fixedTimestep = ( 1000.0 / 60.0 ) / 1000.0;
 
 
 Simulation::Simulation() :
-		m_settings()
+		m_settings(), m_camera()
 {
+	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 	InitWindow(k_screenWidth, k_screenHeight, "Ants");
 	rlImGuiSetup(true);
 
@@ -31,8 +37,8 @@ Simulation::Simulation() :
 
 Simulation::~Simulation()
 {
-	rlImGuiShutdown();
 	CloseWindow();
+	rlImGuiShutdown();
 }
 
 
@@ -121,15 +127,12 @@ void Simulation::HandleInput()
 		m_adaptiveSpeed = !m_adaptiveSpeed;
 	}
 
-//	if ( IsKeyPressed(KEY_ONE))
-//	{
-//		m_drawHomePheromones = !m_drawHomePheromones;
-//	}
-//	if ( IsKeyPressed(KEY_TWO))
-//	{
-//		m_drawFoodPheromones = !m_drawFoodPheromones;
-//	}
-	if ( IsKeyPressed(KEY_THREE))
+	if ( IsKeyPressed(KEY_ONE))
+	{
+		m_drawPheromones = !m_drawPheromones;
+	}
+
+	if ( IsKeyPressed(KEY_TWO))
 	{
 		m_drawAnts = !m_drawAnts;
 	}
@@ -152,11 +155,11 @@ void Simulation::HandleInput()
 		}
 	}
 
-//	if ( IsKeyPressed(KEY_F11))
-//	{
-//		m_showGui = !m_showGui;
-//	}
-//
+	if ( IsKeyPressed(KEY_F11))
+	{
+		m_showGui = !m_showGui;
+	}
+
 	if ( IsKeyPressed(KEY_R))
 	{
 		Reset();
@@ -170,22 +173,14 @@ void Simulation::Update()
 	if ( m_adaptiveSpeed )
 	{
 		const int fps = GetFPS();
-		if ( fps < 10 )
+		if ( fps < k_fpsLowThreshold )
 		{
-			m_gameSpeed = std::max(m_gameSpeed - 0.5f * k_fixedTimestep, 1.f);
-		}
-		else if ( fps < 30 )
-		{
-			m_gameSpeed = std::max(m_gameSpeed - 0.1f * k_fixedTimestep, 1.f);
+			m_gameSpeed = std::max(m_gameSpeed - k_adaptiveSpeedStep, k_minGameSpeed);
 		}
 
-		if ( fps > 144 )
+		if ( fps > k_fpsHighThreshold )
 		{
-			m_gameSpeed = std::min(m_gameSpeed + 0.5f * k_fixedTimestep, 20.f);
-		}
-		else if ( fps > 60 )
-		{
-			m_gameSpeed = std::min(m_gameSpeed + 0.05f * k_fixedTimestep, 20.f);
+			m_gameSpeed = std::min(m_gameSpeed + k_adaptiveSpeedStep, k_maxGameSpeed);
 		}
 	}
 
@@ -232,35 +227,28 @@ void Simulation::ResetCamera()
 	m_camera.target   = {0, 0};
 }
 
-void HelpTooltip(const std::string &text)
-{
-	ImGui::SameLine();
-	ImGui::TextDisabled("(?)");
-	if ( ImGui::IsItemHovered())
-	{
-		ImGui::SetTooltip(text.c_str());
-	}
-}
-
 void Simulation::ShowGui()
 {
-	ImGuiIO &io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	m_shouldHandleInput = !( io.WantCaptureMouse || io.WantCaptureKeyboard );
+	if ( !m_showGui )
+	{
+		return;
+	}
+
+	m_shouldHandleInput = m_gui.ShouldHandleInput();
 
 	rlImGuiBegin();
 
-	StatisticsGui();
-	SettingsGui();
+	m_gui.ShowMainSettings(*this);
 
 	if ( m_showAdvancedSettings )
 	{
-		AdvancedSettingsGui();
+		m_gui.ShowAdvancedSettings(m_settings);
 	}
 
 	rlImGuiEnd();
 }
 
+#if 0
 void Simulation::StatisticsGui()
 {
 
@@ -287,9 +275,9 @@ void Simulation::SettingsGui()
 				ImGui::SliderInt("Brush size", &size, 1, 100);
 
 				ImGui::Combo("Paint type", reinterpret_cast<int *>(&paintType),
-				             paintTitles, static_cast<int>(TileType::eAmount));
+							 paintTitles, static_cast<int>(TileType::eAmount));
 				ImGui::Combo("Brush type", reinterpret_cast<int *>(&brushType),
-				             brushTitles, static_cast<int>(Brush::BrushType::Amount));
+							 brushTitles, static_cast<int>(Brush::BrushType::Amount));
 
 				m_brush.SetBrushSize(size);
 				m_brush.SetBrushType(brushType);
@@ -365,13 +353,16 @@ void Simulation::SettingsGui()
 				m_coloniesManager = std::make_unique<ColoniesManager>(m_world->GetTileMap());
 			}
 		}
+
+		ImGui::Value("Ants amount", static_cast<int>(m_coloniesManager->GetColonies()[0]->GetAntsAmount()));
 	}
 	ImGui::End();
 }
+#endif
 
+#if 0
 void Simulation::AdvancedSettingsGui()
 {
-#if 0
 	ImGui::Begin("Advanced settings");
 	{
 		auto &antsSettings  = m_settings.GetMutableAntsSettings();
@@ -605,8 +596,8 @@ void Simulation::AdvancedSettingsGui()
 
 	}
 	ImGui::End();
-#endif
 }
+#endif
 
 void Simulation::Reset()
 {
