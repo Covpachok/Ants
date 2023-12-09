@@ -26,10 +26,7 @@ Simulation::Simulation() :
 	InitWindow(k_screenWidth, k_screenHeight, "Ants");
 	rlImGuiSetup(true);
 
-	m_camera.rotation = 0;
-	m_camera.zoom     = 1;
-	m_camera.offset   = {0, 0};
-	m_camera.target   = {0, 0};
+	ResetCamera();
 
 	m_world           = std::make_unique<World>();
 	m_coloniesManager = std::make_unique<ColoniesManager>(m_world->GetTileMap());
@@ -140,9 +137,9 @@ void Simulation::HandleInput()
 	if ( IsKeyPressed(KEY_EQUAL))
 	{
 		m_gameSpeed += 1;
-		if ( m_gameSpeed > 5 )
+		if ( m_gameSpeed > k_maxGameSpeed )
 		{
-			m_gameSpeed = 5;
+			m_gameSpeed = k_maxGameSpeed;
 		}
 	}
 
@@ -221,10 +218,13 @@ void Simulation::Draw()
 
 void Simulation::ResetCamera()
 {
+	float width  = static_cast<float>(m_settings.GetGlobalSettings().mapWidth);
+	float height = static_cast<float>(m_settings.GetGlobalSettings().mapHeight);
+
 	m_camera.rotation = 0;
 	m_camera.zoom     = 1;
-	m_camera.offset   = {0, 0};
-	m_camera.target   = {0, 0};
+	m_camera.offset   = {GetScreenWidth() / 2.f, GetScreenHeight() / 2.f};
+	m_camera.target   = {width / 2, height / 2};
 }
 
 void Simulation::ShowGui()
@@ -603,4 +603,5 @@ void Simulation::Reset()
 {
 	m_world           = std::make_unique<World>();
 	m_coloniesManager = std::make_unique<ColoniesManager>(m_world->GetTileMap());
+	ResetCamera();
 }

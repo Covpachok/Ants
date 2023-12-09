@@ -17,35 +17,22 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(IntVec2, x, y)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Color, r, g, b, a)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Range, low, high)
 
-enum class TilesGeneration
-{
-	eNone, eFoodOnly, eWallsOnly, eFoodAndWalls, eAmount
-};
-
-NLOHMANN_JSON_SERIALIZE_ENUM(TilesGeneration, {
-	{ TilesGeneration::eNone, "none" },
-	{ TilesGeneration::eFoodOnly, "foodOnly" },
-	{ TilesGeneration::eWallsOnly, "wallsOnly" },
-	{ TilesGeneration::eFoodAndWalls, "foodAndWalls" },
-	{ TilesGeneration::eAmount, "amount" }
-})
-
 struct AntsSettings
 {
-	float antMovementSpeed        = 0.4f;
-	float antRotationSpeed        = 0.225f;//0.25f;
-	float antRandomRotation       = 0.2f;
+	float antMovementSpeed  = 0.4f;
+	float antRotationSpeed  = 0.25f;//0.25f;
+	float antRandomRotation = 0.2f;
 
-	int   antFovRange             = 8; // Heavily affects performance
+	int antFovRange = 8; // Heavily affects performance
 
-	float pheromoneStrengthLoss   = 0.00004;
-	float pheromoneSpawnIntensity = 128; // Better not to change
-	float pheromoneSpawnDelay     = 20; // Better not to change
+	float pheromoneStrengthLoss = 0.00004;
 
-	float fovCheckDelay           = 3; // Better not to change
+	int deviationDelayMin = 750;
+	int deviationDelayMax = 3000;
+	int deviationTime     = 200;
 
-	Color antDefaultColor         = {128, 128, 255, 128};
-	Color antWithFoodColor        = {128, 255, 128, 128};
+	Color antDefaultColor  = {128, 128, 255, 128};
+	Color antWithFoodColor = {128, 255, 128, 128};
 };
 
 
@@ -55,9 +42,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntsSettings,
                                    antRandomRotation,
                                    antFovRange,
                                    pheromoneStrengthLoss,
-                                   pheromoneSpawnIntensity,
-                                   pheromoneSpawnDelay,
-                                   fovCheckDelay,
+                                   deviationDelayMin,
+                                   deviationDelayMax,
+                                   deviationTime,
                                    antDefaultColor,
                                    antWithFoodColor)
 
@@ -65,11 +52,12 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AntColonySettings,
                                    coloniesAmount,
                                    antsStartAmount,
                                    antsMaxAmount,
-								   dynamicLife,
+                                   dynamicLife,
                                    antDeathDelay,
                                    foodToSpawnAnt,
                                    nestSize)
 
+// Maybe MapSettings is better naming?
 struct GlobalSettings
 {
 	size_t mapWidth  = 640;
@@ -115,8 +103,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TileMapSettings,
 
 struct WorldGenerationSettings
 {
-	TilesGeneration tilesGeneration = TilesGeneration::eFoodAndWalls;
-
 	int   seed            = 1;
 	float noiseScale      = 7.f;
 	int   noiseOctaves    = 8;
@@ -124,20 +110,21 @@ struct WorldGenerationSettings
 	float noiseBlur       = 2.f;
 	float ridgesIntensity = 0.6f;
 
-	Range foodSpawnRange{0.75f, 1.f};
-	Range wallSpawnRange{0.f, 0.15f};
+	Range foodRange{0.75f, 1.f};
+	Range wallRange{0.f, 0.15f};
+	Range emptyRange{0.6f, 0.65f};
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldGenerationSettings,
-                                   tilesGeneration,
                                    seed,
                                    noiseScale,
                                    noiseOctaves,
                                    noiseBlur,
                                    noiseContrast,
                                    ridgesIntensity,
-                                   foodSpawnRange,
-                                   wallSpawnRange)
+                                   foodRange,
+                                   wallRange,
+                                   emptyRange)
 
 class Settings
 {

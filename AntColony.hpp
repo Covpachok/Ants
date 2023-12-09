@@ -15,13 +15,13 @@
 
 struct AntColonySettings
 {
-	size_t coloniesAmount  = 1;
+	size_t coloniesAmount  = 1; // didn't work yet
 	int    antsStartAmount = 1000;
 	int    antsMaxAmount   = 2500;
 
-	bool  dynamicLife    = false;
-	float antDeathDelay  = 25;
-	int   foodToSpawnAnt = 10;
+	bool dynamicLife    = false;
+	int  antDeathDelay  = 25;
+	int  foodToSpawnAnt = 10;
 
 	int nestSize = 5;
 };

@@ -61,6 +61,8 @@ private:
 	void CheckNestCollision(const TileMap &tileMap, const IntVec2 &mapPos);
 	void CheckFoodCollision(const TileMap &tileMap, const IntVec2 &mapPos);
 
+	void RandomizeDeviationDelay();
+
 private:
 	AntId       m_id;
 	AntColonyId m_colonyId;

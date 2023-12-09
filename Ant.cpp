@@ -8,6 +8,10 @@
 
 #include "omp.h"
 
+constexpr float k_pheromoneSpawnIntensity = 128;
+
+constexpr float k_pheromoneSpawnDelay = 20;
+constexpr float k_fovCheckDelay       = 3;
 
 Ant::Ant(AntId id, AntColonyId colonyId, const Vector2 &pos) :
 		m_id(id),
@@ -22,10 +26,10 @@ Ant::Ant(AntId id, AntColonyId colonyId, const Vector2 &pos) :
 	m_colorsPtr[0] = &m_antsSettings.antDefaultColor;
 	m_colorsPtr[1] = &m_antsSettings.antWithFoodColor;
 
-	m_pheromoneSpawnTimer.SetDelay(m_antsSettings.pheromoneSpawnDelay);
-	m_fovCheckTimer.SetDelay(m_antsSettings.fovCheckDelay);
-	m_deviationTimer.SetDelay(Random::Int(750, 3000));
-	m_deviationResetTimer.SetDelay(200);
+	m_pheromoneSpawnTimer.SetDelay(k_pheromoneSpawnDelay);
+	m_fovCheckTimer.SetDelay(k_fovCheckDelay);
+	RandomizeDeviationDelay();
+	m_deviationResetTimer.SetDelay(m_antsSettings.deviationTime);
 	m_lostPheromoneTimer.SetDelay(1000);
 }
 
@@ -41,7 +45,7 @@ void Ant::Update(const TileMap &tileMap, const PheromoneMap &pheromoneMap)
 		m_ignorePheromones = true;
 		m_deviationTimer.Reset();
 		m_deviationResetTimer.Reset();
-		m_deviationTimer.SetDelay(Random::Int(750, 3000));
+		RandomizeDeviationDelay();
 	}
 
 	if ( m_deviationResetTimer.IsElapsed())
@@ -138,12 +142,12 @@ void Ant::SpawnPheromone(PheromoneMap &pheromoneMap)
 	if ( m_gotFood )
 	{
 		pheromoneMap.Add(PheromoneType::Food, pos.x, pos.y,
-		                 m_antsSettings.pheromoneSpawnIntensity * m_pheromoneStrength);
+		                 k_pheromoneSpawnIntensity * m_pheromoneStrength);
 	}
 	else
 	{
 		pheromoneMap.Add(PheromoneType::Nest, pos.x, pos.y,
-		                 m_antsSettings.pheromoneSpawnIntensity * m_pheromoneStrength);
+		                 k_pheromoneSpawnIntensity * m_pheromoneStrength);
 	}
 }
 
@@ -406,4 +410,9 @@ void Ant::CheckFoodCollision(const TileMap &tileMap, const IntVec2 &mapPos)
 		m_takenFoodPos = mapPos;
 		m_state        = SearchForNest;
 	}
+}
+
+void Ant::RandomizeDeviationDelay()
+{
+	m_deviationTimer.SetDelay(Random::Int(m_antsSettings.deviationDelayMin, m_antsSettings.deviationDelayMax));
 }

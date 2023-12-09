@@ -4,6 +4,11 @@
 
 void PaintPoint(TileMap &tileMap, Brush &brush, int x, int y)
 {
+	if ( tileMap.GetTileType({x, y}) == TileType::eNest )
+	{
+		return;
+	}
+
 	tileMap.SetTile({x, y}, brush.GetPaintType());
 }
 
@@ -15,7 +20,7 @@ void PaintSquare(TileMap &tileMap, Brush &brush, int x, int y)
 	{
 		for ( int j = -radius; j <= radius; ++j )
 		{
-			tileMap.SetTile({j + x, i + y}, brush.GetPaintType());
+			PaintPoint(tileMap, brush, j + x, i + y);
 		}
 	}
 }
@@ -31,7 +36,7 @@ void PaintRound(TileMap &tileMap, Brush &brush, int x, int y)
 		{
 			if ( i * i + j * j <= radiusSquared )
 			{
-				tileMap.SetTile({j + x, i + y}, brush.GetPaintType());
+				PaintPoint(tileMap, brush, j + x, i + y);
 			}
 		}
 	}

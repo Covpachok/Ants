@@ -51,6 +51,11 @@ void Gui::ShowMainSettings(Simulation &simulation)
 
 			ImGui::SliderFloat("[+][-] Simulation speed", &gameSpeed,
 			                   simulation.k_minGameSpeed, simulation.k_maxGameSpeed);
+
+			if ( ImGui::Button("Reset speed"))
+			{
+				simulation.m_gameSpeed = 1;
+			}
 		}
 
 		ImGui::SeparatorText("Other");
@@ -102,7 +107,7 @@ void Gui::ShowAdvancedSettings(Settings &settings)
 	{
 		ImGui::Separator();
 
-		ShowGlobalSettings(settings.GetGlobalSettings());
+		ShowGlobalSettings(settings.GetGlobalSettings(), settings.GetPheromoneMapSettings());
 		ShowAntsSettings(settings.GetAntsSettings());
 		ShowAntColonySettings(settings.GetAntColonySettings());
 		ShowTileMapSettings(settings.GetTileMapSettings());
@@ -151,6 +156,22 @@ void Gui::ShowAntsSettings(AntsSettings &antsSettings)
 		            "this variable affects size of this cone.\n"
 		            "Heavily affects performance");
 
+		ImGui::SeparatorText("Pheromones");
+
+		ImGui::InputFloat("Strength loss", &antsSettings.pheromoneStrengthLoss);
+		HelpTooltip("Each time ant takes food/returns to the nest, pheromone \n"
+		            "strength resets, and then slowly deteriorate to 0.\n"
+		            "If value is too high, ants may not form path to distant food source.");
+
+		ImGui::SeparatorText("Deviation");
+
+		ImGui::DragIntRange2("Deviation delay range", &antsSettings.deviationDelayMin, &antsSettings.deviationDelayMax,
+		                     10, 10, 10000);
+
+		ImGui::InputInt("Deviation time", &antsSettings.deviationTime);
+
+
+		ImGui::PopItemWidth();
 		ImGui::TreePop();
 	}
 }
@@ -159,14 +180,44 @@ void Gui::ShowAntColonySettings(AntColonySettings &antColonySettings)
 {
 	if ( ImGui::TreeNode("Ant Colony"))
 	{
+		ImGui::PushItemWidth(200);
+		if ( ImGui::InputInt("Ants start amount", &antColonySettings.antsStartAmount))
+		{
+			antColonySettings.antsStartAmount = std::max(antColonySettings.antsStartAmount, 1);
+		}
+
+		if ( ImGui::InputInt("Ants max amount", &antColonySettings.antsMaxAmount))
+		{
+			antColonySettings.antsMaxAmount = std::max(antColonySettings.antsMaxAmount, 1);
+		}
+
+		ImGui::Checkbox("Dynamic life", &antColonySettings.dynamicLife);
+		HelpTooltip("If true, ants will die and spawn depending of food in the colony.");
+
+		if ( antColonySettings.dynamicLife )
+		{
+			if ( ImGui::InputInt("Ant death delay", &antColonySettings.antDeathDelay))
+			{
+				antColonySettings.antDeathDelay = std::max(antColonySettings.antDeathDelay, 1);
+			}
+
+			if ( ImGui::InputInt("Food to spawn ant", &antColonySettings.foodToSpawnAnt))
+			{
+				antColonySettings.foodToSpawnAnt = std::max(antColonySettings.foodToSpawnAnt, 1);
+			}
+		}
+
+
+		ImGui::PopItemWidth();
 		ImGui::TreePop();
 	}
 }
 
-void Gui::ShowGlobalSettings(GlobalSettings &globalSettings)
+void Gui::ShowGlobalSettings(GlobalSettings &globalSettings, PheromoneMapSettings &pheromoneMapSettings)
 {
-	if ( ImGui::TreeNode("Global"))
+	if ( ImGui::TreeNode("Map"))
 	{
+		ImGui::PushItemWidth(200);
 		ImGui::Text("Restart to apply these");
 
 		int width  = static_cast<int>(globalSettings.mapWidth);
@@ -181,6 +232,9 @@ void Gui::ShowGlobalSettings(GlobalSettings &globalSettings)
 			globalSettings.mapHeight = static_cast<size_t>(height);
 		}
 
+		ImGui::InputFloat("Pheromone evaporation rate", &pheromoneMapSettings.pheromoneEvaporationRate);
+
+		ImGui::PopItemWidth();
 		ImGui::TreePop();
 	}
 }
@@ -189,6 +243,13 @@ void Gui::ShowTileMapSettings(TileMapSettings &tileMapSettings)
 {
 	if ( ImGui::TreeNode("Tiles"))
 	{
+		ImGui::PushItemWidth(200);
+		if ( ImGui::InputInt("Food amount on FoodTile", &tileMapSettings.foodDefaultAmount))
+		{
+			tileMapSettings.foodDefaultAmount = std::max(tileMapSettings.foodDefaultAmount, 1);
+		}
+
+		ImGui::PopItemWidth();
 		ImGui::TreePop();
 	}
 }
@@ -197,6 +258,24 @@ void Gui::ShowWorldGenerationSettings(WorldGenerationSettings &worldGenerationSe
 {
 	if ( ImGui::TreeNode("World Generation"))
 	{
+		ImGui::PushItemWidth(200);
+
+		ImGui::DragFloatRange2("Food range", &worldGenerationSettings.foodRange.low,
+		                       &worldGenerationSettings.foodRange.high, 0.01f, 0.f, 1.f);
+		ImGui::DragFloatRange2("Wall range", &worldGenerationSettings.wallRange.low,
+		                       &worldGenerationSettings.wallRange.high, 0.01f, 0.f, 1.f);
+		ImGui::DragFloatRange2("Empty range", &worldGenerationSettings.emptyRange.low,
+		                       &worldGenerationSettings.emptyRange.high, 0.01f, 0.f, 1.f);
+
+		ImGui::Separator();
+
+		ImGui::SliderFloat("Noise scale", &worldGenerationSettings.noiseScale, 1.f, 16.f);
+		ImGui::SliderFloat("Noise contrast", &worldGenerationSettings.noiseContrast, 0.1f, 4.f);
+		ImGui::SliderFloat("Noise blur", &worldGenerationSettings.noiseBlur, 0.f, 2.f);
+		ImGui::SliderFloat("Ridges intensity", &worldGenerationSettings.ridgesIntensity, 0.f, 1.f);
+		ImGui::SliderInt("Noise octaves", &worldGenerationSettings.noiseOctaves, 1, 6);
+
+		ImGui::PopItemWidth();
 		ImGui::TreePop();
 	}
 }
@@ -224,7 +303,7 @@ void Gui::ShowBrushSettings(Brush &brush)
 		ImGui::SliderInt("Brush size", &size, 1, 100);
 
 		ImGui::Combo("Paint type", reinterpret_cast<int *>(&paintType),
-		             paintTitles, static_cast<int>(TileType::eAmount));
+		             paintTitles, static_cast<int>(TileType::eNest));
 		ImGui::Combo("Brush type", reinterpret_cast<int *>(&brushType),
 		             brushTitles, static_cast<int>(Brush::BrushType::Amount));
 

@@ -13,8 +13,8 @@ World::World()
 
 	m_boundsChecker = std::make_unique<BoundsChecker2D>(0, globalSettings.mapWidth, 0, globalSettings.mapHeight);
 
-	m_worldWidth    = static_cast<int>(globalSettings.mapWidth);
-	m_worldHeight   = static_cast<int>(globalSettings.mapHeight);
+	m_worldWidth  = static_cast<int>(globalSettings.mapWidth);
+	m_worldHeight = static_cast<int>(globalSettings.mapHeight);
 //	m_screenToWorld = globalSettings.screenToMapRatio;
 
 	std::cout << "World size: " << m_worldWidth << "x" << m_worldHeight << std::endl;
@@ -51,18 +51,11 @@ void World::Erase()
 
 void World::GenerateMap()
 {
-	auto &globalSettings = Settings::Instance().GetGlobalSettings();
-	auto &genSettings    = Settings::Instance().GetWorldGenerationSettings();
+	auto &genSettings = Settings::Instance().GetWorldGenerationSettings();
 
-	float Flo      = 0.75f, Fhi = 1.f;
-	float Wlo      = 0.0f, Whi = 0.15f;
-	float Clo      = 0.6f, Chi = 0.65f;
-	float size     = 7.f;
-	int   octaves  = 8.f;
-	float contrast = 2.25f;
-	float blur     = 2.f;
-
-	WorldGenerator::Generate(*m_tileMap, size / 2.f, contrast, blur, {Wlo, Whi}, {Flo, Fhi}, {Clo, Chi}, octaves);
+	WorldGenerator::Generate(*m_tileMap, genSettings.noiseScale / 2.f, genSettings.noiseContrast, genSettings.noiseBlur,
+	                         genSettings.wallRange, genSettings.foodRange, genSettings.emptyRange,
+	                         genSettings.noiseOctaves, genSettings.ridgesIntensity);
 }
 
 bool CheckColor(Color checked, Color sample)

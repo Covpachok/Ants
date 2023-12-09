@@ -16,11 +16,11 @@ public:
 
 	void Elapse() { mTime = mDelay; }
 
-	bool IsElapsed() const { return mTime >= mDelay; }
+	[[nodiscard]] bool IsElapsed() const { return mTime >= mDelay; }
 
 	void Reset() { mTime = 0; }
 
-	float GetTime() const { return mTime; }
+	[[nodiscard]] float GetTime() const { return mTime; }
 
 	void SetDelay(float newDelay) { mDelay = newDelay; }
 

@@ -18,7 +18,7 @@ public:
 private:
 	void ShowAntsSettings(AntsSettings &antsSettings);
 	void ShowAntColonySettings(AntColonySettings &antColonySettings);
-	void ShowGlobalSettings(GlobalSettings &globalSettings);
+	void ShowGlobalSettings(GlobalSettings &globalSettings, PheromoneMapSettings& pheromoneMapSettings);
 	void ShowTileMapSettings(TileMapSettings &tileMapSettings);
 	void ShowWorldGenerationSettings(WorldGenerationSettings &worldGenerationSettings);
 	void ShowSaveLoadSettings(Settings &settings);
