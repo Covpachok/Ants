@@ -2,8 +2,9 @@
 
 #include <omp.h>
 
-constexpr float k_pheromoneMinIntensity = 0.f;
-constexpr float k_pheromoneMaxIntensity = 255.f;
+constexpr float k_pheromoneMinIntensity     = 0.f;
+constexpr float k_pheromoneMaxIntensity     = 255.f;
+constexpr float k_lostEvaporationMultiplier = 16.f;
 
 PheromoneMap::PheromoneMap(size_t width, size_t height, float evaporationRate)
 		:
@@ -106,7 +107,9 @@ void PheromoneMap::Evaporate()
 		{
 			m_pheromones[Food][y][x] = std::max(m_pheromones[Food][y][x] - m_evaporationRate, k_pheromoneMinIntensity);
 			m_pheromones[Nest][y][x] = std::max(m_pheromones[Nest][y][x] - m_evaporationRate, k_pheromoneMinIntensity);
-			m_pheromones[Lost][y][x] = std::max(m_pheromones[Lost][y][x] - m_evaporationRate * 32, k_pheromoneMinIntensity);
+			m_pheromones[Lost][y][x] = std::max(
+					m_pheromones[Lost][y][x] - m_evaporationRate * k_lostEvaporationMultiplier,
+					k_pheromoneMinIntensity);
 			UpdateColor(x, y);
 		}
 	}
@@ -115,11 +118,11 @@ void PheromoneMap::Evaporate()
 void PheromoneMap::UpdateColor(int x, int y)
 {
 	auto &color = m_colorMap.GetMutable(x, y);
-	auto r = static_cast<unsigned char>(m_pheromones[Lost][y][x]);
-	auto g = static_cast<unsigned char>(m_pheromones[Food][y][x]);
-	auto b = static_cast<unsigned char>(m_pheromones[Nest][y][x]);
+	auto r      = static_cast<unsigned char>(m_pheromones[Lost][y][x]);
+	auto g      = static_cast<unsigned char>(m_pheromones[Food][y][x]);
+	auto b      = static_cast<unsigned char>(m_pheromones[Nest][y][x]);
 
-	if(r > g)
+	if ( r > g )
 	{
 		color.r = static_cast<unsigned char>(m_pheromones[Lost][y][x]);
 		color.g = 0;

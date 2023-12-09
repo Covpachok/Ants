@@ -25,7 +25,7 @@ struct AntsSettings
 
 	int antFovRange = 8; // Heavily affects performance
 
-	float pheromoneStrengthLoss = 0.00004;
+	float pheromoneStrengthLoss = 0.0001;
 
 	int deviationDelayMin = 750;
 	int deviationDelayMax = 3000;
@@ -70,7 +70,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GlobalSettings,
 
 struct PheromoneMapSettings
 {
-	float pheromoneEvaporationRate = 0.015f;
+	float pheromoneEvaporationRate = 0.025f;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PheromoneMapSettings,

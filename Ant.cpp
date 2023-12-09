@@ -13,6 +13,8 @@ constexpr float k_pheromoneSpawnIntensity = 128;
 constexpr float k_pheromoneSpawnDelay = 20;
 constexpr float k_fovCheckDelay       = 3;
 
+constexpr float k_decreasingPheromonesMultiplier = 1;
+
 Ant::Ant(AntId id, AntColonyId colonyId, const Vector2 &pos) :
 		m_id(id),
 		m_colonyId(colonyId),
@@ -78,7 +80,7 @@ void Ant::PostUpdate(TileMap &tileMap, PheromoneMap &pheromoneMap)
 		m_takenFood         = false;
 		if ( tileMap.TakeFood(m_takenFoodPos))
 		{
-			pheromoneMap.Set(PheromoneType::Lost, m_takenFoodPos, 192);
+			pheromoneMap.Set(PheromoneType::Lost, m_takenFoodPos, 255);
 			m_lostPheromoneTimer.Reset();
 			m_spawnLostPheromone = true;
 		}
@@ -87,6 +89,7 @@ void Ant::PostUpdate(TileMap &tileMap, PheromoneMap &pheromoneMap)
 	if ( m_deliveredFood )
 	{
 		m_deliveredFood = false;
+		m_decreasePheromones = false;
 //		world.IncDeliveredFoodCount();
 	}
 
@@ -133,13 +136,12 @@ void Ant::SpawnPheromone(PheromoneMap &pheromoneMap)
 {
 	const IntVec2 pos = {m_pos.x, m_pos.y};//Settings::Instance().GetGlobalSettings().ScreenToWorld(m_prevPos);
 
-//	if ( m_spawnLostPheromone )
-//	{
-//		pheromoneMap.Add(PheromoneType::Lost, pos.x, pos.y,
-//		                 ( m_antsSettings.pheromoneSpawnIntensity + 0.1f ) * m_pheromoneStrength);
-//	}
-//	else if ( m_gotFood )
-	if ( m_gotFood )
+	if ( m_spawnLostPheromone )
+	{
+		pheromoneMap.Add(PheromoneType::Lost, pos.x, pos.y,
+		                 ( k_pheromoneSpawnIntensity ) * m_pheromoneStrength);
+	}
+	else if ( m_gotFood )
 	{
 		pheromoneMap.Add(PheromoneType::Food, pos.x, pos.y,
 		                 k_pheromoneSpawnIntensity * m_pheromoneStrength);
@@ -154,9 +156,10 @@ void Ant::SpawnPheromone(PheromoneMap &pheromoneMap)
 void Ant::DecreasePheromone(PheromoneMap &pheromoneMap) const
 {
 	auto          settings = Settings::Instance();
-	const IntVec2 pos      = {m_pos.x, m_pos.y};//settings.GetGlobalSettings().ScreenToWorld(m_prevPos);
+	const IntVec2 pos      = {m_pos.x, m_pos.y};
 	pheromoneMap.Substract(PheromoneType::Food, pos.x, pos.y,
-	                       settings.GetPheromoneMapSettings().pheromoneEvaporationRate * 5);
+	                       settings.GetPheromoneMapSettings().pheromoneEvaporationRate *
+	                       k_decreasingPheromonesMultiplier);
 }
 
 void Ant::CheckCollisions(const TileMap &tileMap)
@@ -256,8 +259,6 @@ void Ant::CheckInFov(const TileMap &tileMap, const PheromoneMap &pheromoneMap)
 			checkPos.x = m_pos.x + checkRotations[side + 1][0] * multiplier;
 			checkPos.y = m_pos.y + checkRotations[side + 1][1] * multiplier;
 
-//			const IntVec2 &checkMapPos = {checkPos.x * screenToMapInverseRatio, checkPos.y *
-//			                                                                    screenToMapInverseRatio}; //world.ScreenToWorld(checkPos.x, checkPos.y);
 			IntVec2    checkMapPos = {checkPos.x, checkPos.y};
 			const Tile &tile       = tileMap.GetTile(checkMapPos);
 
@@ -281,14 +282,12 @@ void Ant::CheckInFov(const TileMap &tileMap, const PheromoneMap &pheromoneMap)
 
 			checkedPheromone = pheromoneMap.Get(searchForPheromoneType, checkMapPos);
 
-//			if ( m_state == SearchForFood &&
-//			     pheromoneMap.Get(PheromoneType::Lost, checkMapPos) > checkedPheromone )
-//			{
-//				m_ignorePheromones   = true;
-//				m_decreasePheromones = true;
-//				m_deviationResetTimer.Reset();
-//				return;
-//			}
+			if ( m_state == SearchForFood &&
+			     pheromoneMap.Get(PheromoneType::Lost, checkMapPos) > checkedPheromone )
+			{
+				m_decreasePheromones = true;
+				return;
+			}
 
 			if ( checkedPheromone > strongestPheromone )
 			{
