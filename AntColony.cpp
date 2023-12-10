@@ -39,6 +39,10 @@ void AntColony::Update(TileMap &tileMap)
 	for ( size_t i = 0; i < m_antsAmount; ++i )
 	{
 		m_ants[i]->Update(tileMap, *m_pheromoneMap);
+		if ( m_ants[i]->IsStuck())
+		{
+			m_ants[i]->SetPos(m_initialAntsSpawnPos);
+		}
 	}
 
 	for ( size_t i = 0; i < m_antsAmount; ++i )

@@ -27,6 +27,7 @@ public:
 	void Update(const TileMap &tileMap, const PheromoneMap &pheromoneMap);
 	void PostUpdate(TileMap &tileMap, PheromoneMap &pheromoneMap);
 
+	void SetPos(const Vector2 &pos) { m_pos = pos; }
 	void SetId(AntId newId) { m_id = newId; }
 
 	AntId GetId() const { return m_id; }
@@ -34,6 +35,7 @@ public:
 
 	Vector2 GetPos() const { return m_pos; }
 	bool IsGotFood() const { return m_gotFood; }
+	bool IsStuck() const { return m_stuck; }
 
 	void Draw();
 
@@ -87,10 +89,11 @@ private:
 	Timer m_deviationResetTimer;
 	Timer m_lostPheromoneTimer;
 
-	bool m_gotFood          = false;
-	bool m_takenFood        = false;
-	bool m_deliveredFood    = false;
-	bool m_ignorePheromones = false;
+	bool m_stuck              = false;
+	bool m_gotFood            = false;
+	bool m_takenFood          = false;
+	bool m_deliveredFood      = false;
+	bool m_ignorePheromones   = false;
 	bool m_decreasePheromones = false;
 	bool m_spawnLostPheromone = false;
 

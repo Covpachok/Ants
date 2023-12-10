@@ -189,8 +189,7 @@ void Ant::CheckCollisions(const TileMap &tileMap)
 
 		if ( !tileMap.GetTile(prevMapPos).IsPassable())
 		{
-			//			m_pos = world.GetScreenHomePos();
-			// FIND THE NEAREST NEST AND TELEPORT THERE
+			m_stuck = true;
 		}
 
 		TurnBackward();
